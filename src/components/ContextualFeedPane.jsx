@@ -3,14 +3,18 @@ import {
   MessageSquare, 
   Send, 
   Link,
-  X
+  X,
+  PanelRightClose
 } from 'lucide-react';
 
 export default function ContextualFeedPane({ 
-  comments, 
+  comments = [], 
   onAddComment,
   isMobileOpen,
-  onCloseMobile
+  onCloseMobile,
+  isCollapsed = false,
+  onToggleCollapse,
+  width = 300
 }) {
   const [activeFilter, setActiveFilter] = useState('ALL');
   const [newText, setNewText] = useState('');
@@ -18,7 +22,7 @@ export default function ContextualFeedPane({
 
   const filteredComments = activeFilter === 'ALL'
     ? comments
-    : comments.filter(c => c.category.toUpperCase() === activeFilter.toUpperCase());
+    : comments.filter(c => c.category?.toUpperCase() === activeFilter.toUpperCase());
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -26,8 +30,8 @@ export default function ContextualFeedPane({
 
     onAddComment({
       id: `c-${Date.now()}`,
-      author: 'J. Doe',
-      avatar: 'JD',
+      author: 'Reviewer (Logged In)',
+      avatar: 'RV',
       time: 'Just now',
       category: category,
       badge: category,
@@ -35,6 +39,8 @@ export default function ContextualFeedPane({
     });
     setNewText('');
   };
+
+  if (isCollapsed) return null;
 
   return (
     <>
@@ -46,19 +52,33 @@ export default function ContextualFeedPane({
         ></div>
       )}
 
-      <aside className={`
-        fixed inset-y-0 right-0 z-50 w-80 bg-white border-l border-slate-200 flex flex-col h-full shadow-xl transition-transform duration-200 select-none text-xs
-        lg:relative lg:inset-auto lg:z-auto lg:w-80 lg:shadow-none lg:translate-x-0 lg:h-[calc(100vh-3.5rem)]
-        ${isMobileOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'}
-      `}>
+      <aside 
+        style={{ width: `${width}px` }}
+        className={`
+          fixed inset-y-0 right-0 z-50 bg-white border-l border-slate-200 flex flex-col h-full shadow-xl transition-transform duration-200 select-none text-xs
+          lg:relative lg:inset-auto lg:z-auto lg:shadow-none lg:translate-x-0 lg:h-[calc(100vh-3.5rem)]
+          ${isMobileOpen ? 'translate-x-0 !w-80' : 'translate-x-full lg:translate-x-0'}
+        `}
+      >
         {/* Feed Header */}
-        <div className="h-12 lg:h-10 px-3 border-b border-slate-200 bg-slate-50/50 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-slate-700">
-            <MessageSquare className="w-3.5 h-3.5 text-slate-600" />
-            <span>Contextual Feed ({comments.length})</span>
+        <div className="h-12 lg:h-10 px-3 border-b border-slate-200 bg-slate-50/70 flex items-center justify-between">
+          <div className="flex items-center gap-1.5 font-bold uppercase text-[11px] text-slate-800 truncate">
+            <MessageSquare className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
+            <span className="truncate">Contextual Feed ({comments.length})</span>
           </div>
 
           <div className="flex items-center gap-1">
+            {/* Desktop Collapse Button */}
+            {onToggleCollapse && (
+              <button
+                onClick={onToggleCollapse}
+                title="Collapse Contextual Feed"
+                className="hidden lg:flex p-1 rounded hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer"
+              >
+                <PanelRightClose className="w-3.5 h-3.5" />
+              </button>
+            )}
+
             {/* Mobile Close Button */}
             <button
               onClick={onCloseMobile}
@@ -70,7 +90,7 @@ export default function ContextualFeedPane({
         </div>
 
         {/* Filter Tabs */}
-        <div className="px-2.5 py-1.5 border-b border-slate-200 flex items-center gap-1 overflow-x-auto custom-scrollbar">
+        <div className="px-2.5 py-1.5 border-b border-slate-200 flex items-center gap-1 overflow-x-auto custom-scrollbar bg-white">
           {['ALL', 'NOTES', 'REVIEW', 'ISSUES', 'MINUTES'].map((key) => (
             <button
               key={key}
@@ -103,7 +123,7 @@ export default function ContextualFeedPane({
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-[10px] flex items-center justify-center">
-                      {c.avatar}
+                      {c.avatar || 'JD'}
                     </div>
                     <div>
                       <div className="font-bold text-slate-900 text-xs leading-tight">{c.author}</div>
@@ -120,7 +140,7 @@ export default function ContextualFeedPane({
                   }`}>
                     {isIssue && '⚠️ '}
                     {isNote && '🎓 '}
-                    {c.badge}
+                    {c.badge || c.category}
                   </span>
                 </div>
 
@@ -150,25 +170,24 @@ export default function ContextualFeedPane({
 
           <form onSubmit={handleSubmit} className="space-y-1.5">
             <textarea
+              rows={2}
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
-              rows="2"
-              placeholder="Write a note or response..."
-              className="w-full bg-slate-50 border border-slate-200 focus:bg-white rounded p-2 text-xs text-slate-900 placeholder-slate-400 outline-none resize-none transition"
+              placeholder="Write a note or regulatory response..."
+              className="w-full bg-slate-50 border border-slate-200 rounded p-2 text-xs text-slate-900 placeholder-slate-400 outline-none focus:bg-white focus:border-slate-400 resize-none transition"
             />
 
-            <div className="flex items-center justify-between text-[11px]">
-              <span className="text-slate-400 text-[10px] flex items-center gap-1">
-                <Link className="w-3 h-3 text-slate-400" />
-                Linked to active selection
+            <div className="flex items-center justify-between">
+              <span className="text-[10.5px] text-slate-400 flex items-center gap-1">
+                <Link className="w-3 h-3 text-slate-400" /> Linked to active selection
               </span>
 
               <button
                 type="submit"
-                disabled={!newText.trim()}
-                className="bg-slate-900 hover:bg-slate-800 disabled:opacity-40 text-white font-bold px-2.5 py-1 rounded text-xs transition cursor-pointer"
+                className="flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1 rounded text-xs transition cursor-pointer shadow-2xs"
               >
-                Post Note
+                <Send className="w-3 h-3" />
+                <span>Post Note</span>
               </button>
             </div>
           </form>

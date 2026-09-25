@@ -10,7 +10,12 @@ import {
   Lock, 
   History, 
   Crown,
-  Download
+  PlusCircle,
+  TrendingUp,
+  ExternalLink,
+  Sliders,
+  CheckCircle,
+  Database
 } from 'lucide-react';
 import { auditHistoryLogs } from '../data/mockData';
 
@@ -20,16 +25,31 @@ export default function AdminDashboard({
   onSelectBank, 
   onOpenEditMasterModal,
   onOpenBankCustomModal,
+  onOpenAddPolicyModal,
   onOpenExportModal,
-  onSwitchToLibraryView
+  onSwitchToLibraryView,
+  onSelectPolicy
 }) {
   const [bankSearch, setBankSearch] = useState('');
+  const [policySearch, setPolicySearch] = useState('');
+  const [selectedDomainFilter, setSelectedDomainFilter] = useState('ALL');
   const [activeTab, setActiveTab] = useState('BANKS'); // 'BANKS' | 'POLICIES' | 'AUDIT'
 
   const filteredBanks = banks.filter(b => 
     b.name.toLowerCase().includes(bankSearch.toLowerCase()) || 
     b.tier.toLowerCase().includes(bankSearch.toLowerCase())
   );
+
+  const policyList = Object.values(policies);
+  const filteredPolicies = policyList.filter(pol => {
+    const matchesSearch = pol.title.toLowerCase().includes(policySearch.toLowerCase()) ||
+      pol.complianceLevel.toLowerCase().includes(policySearch.toLowerCase()) ||
+      pol.id.toLowerCase().includes(policySearch.toLowerCase()) ||
+      pol.breadcrumb.toLowerCase().includes(policySearch.toLowerCase());
+    
+    if (selectedDomainFilter === 'ALL') return matchesSearch;
+    return matchesSearch && pol.breadcrumb.toLowerCase().includes(selectedDomainFilter.toLowerCase());
+  });
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar bg-[#f8fafc] p-6 sm:p-8 space-y-6 text-xs">
@@ -49,18 +69,18 @@ export default function AdminDashboard({
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-1">
-              Centrally governing master regulatory standards across 4 Subscribed Australian Tier-1 Banks.
+              Centrally authoring and governing {policyList.length} master regulatory standards across 4 Subscribed Australian Tier-1 Banks.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2.5">
           <button
-            onClick={() => onOpenEditMasterModal('oauth-sso')}
+            onClick={onOpenAddPolicyModal}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer"
           >
-            <Edit className="w-4 h-4" />
-            <span>Edit Master Policy Baseline</span>
+            <PlusCircle className="w-4 h-4" />
+            <span>Add Master Policy Framework</span>
           </button>
 
           <button
@@ -96,7 +116,7 @@ export default function AdminDashboard({
           }`}
         >
           <FileText className="w-4 h-4" />
-          <span>Master Library Standards</span>
+          <span>Master Library Standards ({policyList.length})</span>
         </button>
 
         <button
@@ -209,64 +229,124 @@ export default function AdminDashboard({
 
       {/* TAB 2: Master Library Standards */}
       {activeTab === 'POLICIES' && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs p-6 space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs p-6 space-y-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
-                Government-Approved Master Regulatory Standards
+                Master Banking Regulatory Standards ({filteredPolicies.length} of {policyList.length})
               </h3>
               <p className="text-xs text-slate-500">
-                Standardized frameworks authored by the central authority that all connected institutions subscribe to.
+                Government-approved reference frameworks authored centrally. All changes immediately propagate to member bank tenants.
               </p>
             </div>
-            <button
-              onClick={() => onOpenEditMasterModal('oauth-sso')}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition cursor-pointer"
-            >
-              Edit Master Baseline
-            </button>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <div className="relative w-64">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={policySearch}
+                  onChange={(e) => setPolicySearch(e.target.value)}
+                  placeholder="Filter standards by name or code..."
+                  className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                />
+              </div>
+
+              <select
+                value={selectedDomainFilter}
+                onChange={(e) => setSelectedDomainFilter(e.target.value)}
+                className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 outline-none cursor-pointer"
+              >
+                <option value="ALL">All Domains</option>
+                <option value="Prudential">APRA Prudential</option>
+                <option value="Privacy">Privacy & Data Governance</option>
+                <option value="AML">AML/CTF Financial Crime</option>
+                <option value="Payment">Payment Rails & API</option>
+              </select>
+
+              <button
+                onClick={onOpenAddPolicyModal}
+                className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs transition cursor-pointer shadow-2xs"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Add Framework</span>
+              </button>
+            </div>
           </div>
 
+          {/* Grid of all policies */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {Object.values(policies).map((pol) => (
+            {filteredPolicies.map((pol) => (
               <div
                 key={pol.id}
-                className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 space-y-3 hover:border-slate-300 transition"
+                className="border border-slate-200 rounded-xl p-4 bg-slate-50/60 space-y-3 hover:border-slate-300 transition shadow-2xs flex flex-col justify-between"
               >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <span className="text-[10.5px] font-semibold text-slate-500">{pol.breadcrumb}</span>
-                    <h4 className="text-xs font-bold text-slate-900 mt-0.5">{pol.title}</h4>
-                  </div>
-                  <span className="text-xs font-mono font-bold bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200">
-                    {pol.latestVersion}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-700 italic bg-white p-2.5 rounded border border-slate-200">
-                  "{pol.visionStatement}"
-                </p>
-
-                <div className="space-y-1.5 text-xs">
-                  <div className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <Lock className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Locked Regulatory Clauses:</span>
-                  </div>
-                  {pol.coreFrameworkClauses?.map((c, idx) => (
-                    <div key={idx} className="text-[11px] text-slate-600 pl-4 border-l border-slate-200">
-                      <strong>{c.clauseId}:</strong> {c.title}
+                <div className="space-y-2.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <span className="text-[10.5px] font-semibold text-slate-500 block truncate">{pol.breadcrumb}</span>
+                      <h4 className="text-xs font-extrabold text-slate-900 mt-0.5">{pol.title}</h4>
                     </div>
-                  ))}
+                    <span className="text-xs font-mono font-bold bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200 flex-shrink-0">
+                      {pol.latestVersion}
+                    </span>
+                  </div>
+
+                  <p className="text-[11.5px] text-slate-700 italic bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed">
+                    "{pol.visionStatement}"
+                  </p>
+
+                  {/* Statutory Clauses */}
+                  <div className="space-y-1 text-xs">
+                    <div className="font-bold text-slate-800 flex items-center gap-1.5 text-[11px]">
+                      <Lock className="w-3 h-3 text-emerald-700" />
+                      <span>Statutory Master Clauses ({pol.coreFrameworkClauses?.length || 0}):</span>
+                    </div>
+                    {pol.coreFrameworkClauses?.slice(0, 2).map((c, idx) => (
+                      <div key={idx} className="text-[11px] text-slate-600 pl-3 border-l-2 border-slate-200">
+                        <strong className="text-slate-800">{c.clauseId}:</strong> {c.title}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Metrics Table Summary */}
+                  {pol.metricsTable && (
+                    <div className="bg-white rounded-lg border border-slate-200 p-2 text-[11px] space-y-1">
+                      <div className="font-bold text-slate-700 text-[10.5px] uppercase flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3 text-slate-500" />
+                        <span>Monitored Telemetry Baseline</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-[10.5px]">
+                        {pol.metricsTable.slice(0, 3).map((m, mIdx) => (
+                          <div key={mIdx} className="truncate">
+                            <span className="text-slate-500 block truncate">{m.metric}</span>
+                            <span className="font-mono font-bold text-slate-900">{m.actual}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-xs">
-                  <span className="text-emerald-700 font-bold">{pol.complianceLevel}</span>
-                  <button
-                    onClick={() => onOpenEditMasterModal(pol.id)}
-                    className="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Edit className="w-3.5 h-3.5" /> Edit Master Spec
-                  </button>
+                <div className="pt-3 border-t border-slate-200 flex justify-between items-center text-xs">
+                  <span className="text-emerald-700 font-bold text-[11px]">{pol.complianceLevel}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => {
+                        if (onSelectPolicy) onSelectPolicy(pol.id);
+                        onSwitchToLibraryView();
+                      }}
+                      className="text-xs text-slate-700 hover:text-slate-900 font-semibold flex items-center gap-1 bg-white border border-slate-200 px-2 py-1 rounded hover:bg-slate-50 cursor-pointer"
+                    >
+                      <ExternalLink className="w-3 h-3" /> View in Library
+                    </button>
+                    <button
+                      onClick={() => onOpenEditMasterModal(pol.id)}
+                      className="text-xs text-blue-700 hover:text-blue-900 font-bold flex items-center gap-1 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded hover:bg-blue-100 cursor-pointer"
+                    >
+                      <Edit className="w-3 h-3" /> Edit Master Spec
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

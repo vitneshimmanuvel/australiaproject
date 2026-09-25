@@ -3,23 +3,31 @@ import {
   FileEdit, 
   Share2, 
   Lightbulb, 
-  GraduationCap, 
-  AlertTriangle, 
-  FileSpreadsheet, 
   TrendingUp, 
   CheckCircle2,
   Lock,
   Unlock,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  Layers,
+  FileText,
+  AlertCircle,
+  Power,
+  ToggleLeft,
+  ToggleRight,
+  ShieldAlert
 } from 'lucide-react';
 
 export default function PolicyWorkspacePane({ 
   policy, 
   selectedBank, 
   onOpenEditModal, 
-  onOpenExportModal 
+  onOpenExportModal,
+  onTogglePolicyActive
 }) {
   const [activeTab, setActiveTab] = useState('ALL');
+  const [timeRange, setTimeRange] = useState('24h');
+  const [hoveredPoint, setHoveredPoint] = useState(null);
 
   if (!policy) {
     return (
@@ -29,77 +37,192 @@ export default function PolicyWorkspacePane({
     );
   }
 
-  const bankAddenda = policy.bankCustomAddenda?.[selectedBank.id] || {
-    sessionTimeout: '15 Minutes Inactivity',
-    mfaRule: 'Transfers > $5,000 AUD',
+  const bankAddendaRaw = policy.bankCustomAddenda?.[selectedBank.id];
+  const isPolicyActive = Boolean(bankAddendaRaw && bankAddendaRaw.status !== 'INACTIVE');
+
+  const bankAddenda = bankAddendaRaw || {
+    sessionTimeout: '15 Minutes Inactivity / 8h Absolute',
+    mfaRule: 'Transfers > $5,000 AUD or Novel IP',
     customClause: 'Standard institutional operational conditions applied.',
     lastModifiedBy: 'Bank Compliance Team',
   };
 
   const filteredArtifacts = activeTab === 'ALL'
-    ? policy.artifacts || []
-    : (policy.artifacts || []).filter(a => a.type.toUpperCase() === activeTab.toUpperCase());
+    ? (policy.artifacts || [])
+    : (policy.artifacts || []).filter(a => a.type?.toUpperCase() === activeTab.toUpperCase());
+
+  // Dynamic telemetry configuration for each policy domain
+  const getTelemetryConfig = () => {
+    const id = policy.id || '';
+    const breadcrumb = (policy.breadcrumb || '').toLowerCase();
+
+    if (breadcrumb.includes('cps 230') || id.includes('continuity') || id.includes('third-party')) {
+      return {
+        title: 'Operational Resilience & Service Continuity',
+        subtitle: 'Core Availability SLA (%) vs RTO Recovery Failover (min)',
+        line1Name: 'Recovery RTO (min)',
+        line2Name: 'Core SLA Uptime (%)',
+        points: [
+          { time: '00:00', val1: '1.2m', val2: '99.99%', x: 0, y1: 95, y2: 25 },
+          { time: '06:00', val1: '0.8m', val2: '99.99%', x: 100, y1: 102, y2: 22 },
+          { time: '12:00', val1: '2.1m', val2: '99.98%', x: 200, y1: 80, y2: 30 },
+          { time: '18:00', val1: '1.4m', val2: '99.99%', x: 300, y1: 92, y2: 24 },
+          { time: '21:00', val1: '0.9m', val2: '100.0%', x: 400, y1: 100, y2: 20 },
+        ],
+        pathD: "M 0 95 Q 50 102, 100 102 T 200 80 T 300 92 T 400 100",
+        pathD2: "M 0 25 Q 50 22, 100 22 T 200 30 T 300 24 T 400 20",
+      };
+    }
+
+    if (breadcrumb.includes('privacy') || id.includes('privacy') || id.includes('cdr')) {
+      return {
+        title: 'Customer Data Governance & CDR Consent',
+        subtitle: 'PII Tokenization (P99 ms) vs Open Banking CDR Grant Verification',
+        line1Name: 'Tokenization (ms)',
+        line2Name: 'CDR Throughput',
+        points: [
+          { time: '00:00', val1: '6.4ms', val2: '280 req/s', x: 0, y1: 90, y2: 70 },
+          { time: '06:00', val1: '7.8ms', val2: '840 req/s', x: 100, y1: 82, y2: 45 },
+          { time: '12:00', val1: '11.2ms', val2: '1,920 req/s', x: 200, y1: 65, y2: 25 },
+          { time: '18:00', val1: '9.1ms', val2: '1,450 req/s', x: 300, y1: 75, y2: 35 },
+          { time: '21:00', val1: '6.8ms', val2: '610 req/s', x: 400, y1: 88, y2: 60 },
+        ],
+        pathD: "M 0 90 Q 50 82, 100 82 T 200 65 T 300 75 T 400 88",
+        pathD2: "M 0 70 Q 50 45, 100 45 T 200 25 T 300 35 T 400 60",
+      };
+    }
+
+    if (breadcrumb.includes('financial crime') || breadcrumb.includes('aml') || id.includes('aml') || id.includes('sanctions')) {
+      return {
+        title: 'AUSTRAC Financial Crime & Sanctions Pipeline',
+        subtitle: 'Sanctions Matching (ms) vs AUSTRAC TTR Processing Queue',
+        line1Name: 'Sanctions Latency (ms)',
+        line2Name: 'TTR Queue Depth',
+        points: [
+          { time: '00:00', val1: '24.1ms', val2: '12 items', x: 0, y1: 85, y2: 95 },
+          { time: '06:00', val1: '26.8ms', val2: '45 items', x: 100, y1: 78, y2: 80 },
+          { time: '12:00', val1: '32.4ms', val2: '210 items', x: 200, y1: 60, y2: 40 },
+          { time: '18:00', val1: '29.0ms', val2: '140 items', x: 300, y1: 70, y2: 55 },
+          { time: '21:00', val1: '25.3ms', val2: '30 items', x: 400, y1: 82, y2: 90 },
+        ],
+        pathD: "M 0 85 Q 50 78, 100 78 T 200 60 T 300 70 T 400 82",
+        pathD2: "M 0 95 Q 50 80, 100 80 T 200 40 T 300 55 T 400 90",
+      };
+    }
+
+    if (breadcrumb.includes('payment') || id.includes('npp') || id.includes('rate-limiting')) {
+      return {
+        title: 'NPP Rails Fast Settlement & Gateway Throughput',
+        subtitle: 'Fast Settlement Velocity (s) vs Gateway Traffic (Tx/min)',
+        line1Name: 'Settlement Time (s)',
+        line2Name: 'NPP Throughput',
+        points: [
+          { time: '00:00', val1: '1.2s', val2: '450 Tx/m', x: 0, y1: 95, y2: 85 },
+          { time: '06:00', val1: '1.3s', val2: '1,200 Tx/m', x: 100, y1: 90, y2: 60 },
+          { time: '12:00', val1: '1.8s', val2: '4,850 Tx/m', x: 200, y1: 70, y2: 25 },
+          { time: '18:00', val1: '1.5s', val2: '3,100 Tx/m', x: 300, y1: 80, y2: 45 },
+          { time: '21:00', val1: '1.3s', val2: '890 Tx/m', x: 400, y1: 92, y2: 75 },
+        ],
+        pathD: "M 0 95 Q 50 90, 100 90 T 200 70 T 300 80 T 400 92",
+        pathD2: "M 0 85 Q 50 60, 100 60 T 200 25 T 300 45 T 400 75",
+      };
+    }
+
+    // Default APRA CPS 234 / Authentication Security
+    return {
+      title: 'APRA CPS 234 Cryptographic Verification Telemetry',
+      subtitle: 'Token Issue & Revocation Latency (ms) vs Active Multi-Bank Sessions',
+      line1Name: 'Token Latency (ms)',
+      line2Name: 'Active Sessions',
+      points: [
+        { time: '00:00', val1: '12.1ms', val2: '1.2k sess', x: 0, y1: 92, y2: 80 },
+        { time: '06:00', val1: '13.5ms', val2: '3.4k sess', x: 100, y1: 88, y2: 55 },
+        { time: '12:00', val1: '16.8ms', val2: '8.9k sess', x: 200, y1: 72, y2: 25 },
+        { time: '18:00', val1: '14.9ms', val2: '6.1k sess', x: 300, y1: 82, y2: 40 },
+        { time: '21:00', val1: '12.8ms', val2: '2.5k sess', x: 400, y1: 90, y2: 70 },
+      ],
+      pathD: "M 0 92 Q 50 88, 100 88 T 200 72 T 300 82 T 400 90",
+      pathD2: "M 0 80 Q 50 55, 100 55 T 200 25 T 300 40 T 400 70",
+    };
+  };
+
+  const telemetry = getTelemetryConfig();
 
   return (
-    <main className="flex-1 min-w-0 overflow-y-auto custom-scrollbar bg-[#f8fafc] text-slate-900 p-6 space-y-5">
-      {/* 1. Header: Breadcrumb & Title & Action Buttons */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 border-b border-slate-200 pb-4">
+    <main className="flex-1 min-w-0 overflow-y-auto custom-scrollbar bg-[#f8fafc] text-slate-900 p-5 sm:p-7 space-y-6">
+      {/* 1. Header: Clean Title & Action Buttons + Active / Inactive Status Switcher */}
+      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="text-[11px] text-slate-500 font-medium mb-1 flex items-center gap-1.5">
-            <span>{policy.breadcrumb}</span>
+          <div className="flex flex-wrap items-center gap-2 mb-1.5">
+            <span className="text-[11px] font-semibold text-slate-500">{policy.breadcrumb}</span>
+            <span className="text-[10.5px] font-mono font-bold bg-blue-50 text-blue-800 px-2 py-0.2 rounded border border-blue-200">
+              {policy.latestVersion}
+            </span>
+            <span className="text-[10.5px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.2 rounded border border-emerald-200">
+              {policy.complianceLevel}
+            </span>
           </div>
+
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">
             {policy.title}
           </h1>
+
+          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
+            <span>Owner: <strong className="text-slate-700 font-semibold">{policy.ownedBy}</strong></span>
+            <span>•</span>
+            <span>Last Updated: <strong className="text-slate-700 font-semibold">{policy.lastUpdated}</strong></span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Action Buttons + Active / Inactive Button */}
+        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+          {/* Active / Inactive Toggle Button for Selected Bank */}
+          {onTogglePolicyActive && (
+            <button
+              onClick={() => onTogglePolicyActive(policy.id, selectedBank.id)}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition cursor-pointer border shadow-2xs ${
+                isPolicyActive
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 group'
+                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600'
+              }`}
+              title={isPolicyActive ? "Click to set this policy to Inactive for this bank" : "Click to Activate this policy for this bank"}
+            >
+              <Power className="w-3.5 h-3.5" />
+              {isPolicyActive ? (
+                <span>
+                  <span className="group-hover:hidden">🟢 Active</span>
+                  <span className="hidden group-hover:inline">Set Inactive</span>
+                </span>
+              ) : (
+                <span>⚡ Activate Policy</span>
+              )}
+            </button>
+          )}
+
           <button
             onClick={onOpenEditModal}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
           >
             <FileEdit className="w-3.5 h-3.5" />
-            <span>Edit Bank Addenda</span>
+            <span>Configure Addenda</span>
           </button>
 
           <button
             onClick={onOpenExportModal}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
           >
             <Share2 className="w-3.5 h-3.5 text-slate-600" />
-            <span>Export Spec</span>
+            <span>Export Cert</span>
           </button>
         </div>
       </div>
 
-      {/* 2. Metadata 4-Box Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white border border-slate-200 rounded-xl p-3.5 text-xs shadow-2xs">
-        <div>
-          <div className="text-[10px] uppercase font-bold text-slate-400">Latest Version</div>
-          <div className="font-mono text-slate-900 font-bold text-xs mt-0.5">{policy.latestVersion}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase font-bold text-slate-400">Last Updated</div>
-          <div className="text-slate-800 font-medium text-xs mt-0.5">{policy.lastUpdated}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase font-bold text-slate-400">Custodian Squad</div>
-          <div className="text-slate-800 font-medium text-xs mt-0.5">{policy.ownedBy}</div>
-        </div>
-        <div>
-          <div className="text-[10px] uppercase font-bold text-slate-400">Compliance Standard</div>
-          <div className="text-emerald-700 font-bold text-xs mt-0.5 truncate">
-            {policy.complianceLevel}
-          </div>
-        </div>
-      </div>
-
-      {/* 3. In-Spirit Vision Statement Box */}
-      <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-3.5 flex gap-3 items-start">
+      {/* 2. Executive Summary / Basic Understanding Callout */}
+      <div className="bg-blue-50/60 border border-blue-200/80 rounded-xl p-4 flex gap-3 items-start">
         <Lightbulb className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-        <div className="space-y-0.5">
-          <div className="text-[10px] font-bold uppercase tracking-wider text-blue-900">
-            REGULATORY INTENT & VISION STATEMENT
+        <div className="space-y-1">
+          <div className="text-[10.5px] font-bold uppercase tracking-wider text-blue-900">
+            REGULATORY INTENT & PURPOSE (PLAIN ENGLISH)
           </div>
           <p className="text-xs text-slate-800 leading-relaxed">
             "{policy.visionStatement}"
@@ -107,50 +230,25 @@ export default function PolicyWorkspacePane({
         </div>
       </div>
 
-      {/* 4. Dependencies & System Interlinks */}
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            System Dependencies & Interlinks
-          </span>
-          <span className="text-[10px] font-mono font-bold bg-slate-100 text-slate-600 px-1.5 py-0.2 rounded border border-slate-200">
-            {policy.dependencies?.length || 0} ACTIVE
-          </span>
-        </div>
-
-        <div className="flex flex-wrap gap-2 text-xs">
-          {policy.dependencies?.map((dep, idx) => (
-            <div
-              key={idx}
-              className="flex items-center gap-2 bg-white border border-slate-200 px-2.5 py-1 rounded-lg shadow-2xs"
-            >
-              <span className={`w-2 h-2 rounded-full ${dep.status === 'Deprecating' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-              <span className="text-slate-900 font-medium">{dep.name}</span>
-              <span className="text-slate-500 text-[11px] font-mono">({dep.status})</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* 5. Master Baseline vs Bank Policy Addenda */}
+      {/* 3. Core Comparison: Master Government Baseline vs Bank Operational Addenda */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
-        {/* Master Standard */}
+        {/* Left Card: Master Standard (Locked) */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-            <div className="flex items-center gap-1.5 font-bold text-slate-900">
+          <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+            <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
               <Lock className="w-3.5 h-3.5 text-emerald-700" />
               <span>Master Statutory Framework (Locked)</span>
             </div>
-            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.2 rounded border border-emerald-200">
+            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
               Mandatory APRA Standard
             </span>
           </div>
 
           <div className="space-y-2">
-            {policy.coreFrameworkClauses?.map((c, idx) => (
-              <div key={idx} className="p-2.5 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <div className="font-bold text-slate-900 text-xs flex justify-between">
-                  <span>{c.clauseId}: {c.title}</span>
+            {(policy.coreFrameworkClauses || []).slice(0, 2).map((c, idx) => (
+              <div key={idx} className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <div className="font-bold text-slate-900 text-xs">
+                  {c.clauseId}: {c.title}
                 </div>
                 <p className="text-slate-600 text-[11.5px] leading-relaxed">
                   {c.content}
@@ -160,57 +258,221 @@ export default function PolicyWorkspacePane({
           </div>
         </div>
 
-        {/* Bank Custom Addenda */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-2">
-            <div className="flex items-center gap-1.5 font-bold text-slate-900">
-              <Unlock className="w-3.5 h-3.5 text-blue-600" />
-              <span>Active Bank Addenda ({selectedBank.name.split(' ')[0]})</span>
+        {/* Right Card: Bank Operational Addenda */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs flex flex-col justify-between">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
+              <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
+                <Unlock className="w-3.5 h-3.5 text-blue-600" />
+                <span>{selectedBank.name} Operational Addenda</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
+                  isPolicyActive 
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                }`}>
+                  {isPolicyActive ? '🟢 Active' : '⚪ Inactive'}
+                </span>
+                <button
+                  onClick={onOpenEditModal}
+                  className="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                >
+                  Edit Rule
+                </button>
+              </div>
             </div>
-            <button
-              onClick={onOpenEditModal}
-              className="text-xs text-blue-700 font-bold hover:underline cursor-pointer"
-            >
-              Modify Terms
-            </button>
+
+            {isPolicyActive ? (
+              <div className="space-y-2.5 mt-3">
+                <div className="bg-blue-50/40 p-2.5 rounded-lg border border-blue-100">
+                  <div className="text-[10px] uppercase font-bold text-blue-900">Configured Operational Timeout</div>
+                  <div className="font-mono text-slate-900 font-bold text-xs mt-0.5">
+                    {bankAddenda.sessionTimeout || '15 Minutes Inactivity / 8h Absolute'}
+                  </div>
+                </div>
+
+                <div className="bg-blue-50/40 p-2.5 rounded-lg border border-blue-100">
+                  <div className="text-[10px] uppercase font-bold text-blue-900">Step-Up / Risk Threshold Trigger</div>
+                  <div className="text-slate-800 font-medium text-xs mt-0.5">
+                    {bankAddenda.mfaRule || 'Transfers > $5,000 AUD or Novel IP Geolocation'}
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <div className="text-[10px] uppercase font-bold text-slate-600">Institution Addendum Clause</div>
+                  <p className="text-slate-700 text-xs mt-0.5 italic">
+                    "{bankAddenda.customClause || 'Institutional operational rules active.'}"
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 my-3 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center space-y-2">
+                <ShieldAlert className="w-5 h-5 text-slate-400 mx-auto" />
+                <div className="font-bold text-slate-700 text-xs">
+                  This policy is currently Inactive for {selectedBank.name}
+                </div>
+                <p className="text-[11.5px] text-slate-500">
+                  Default baseline rules apply. Activate this policy to enforce custom institutional timeout and risk conditions.
+                </p>
+                {onTogglePolicyActive && (
+                  <button
+                    onClick={() => onTogglePolicyActive(policy.id, selectedBank.id)}
+                    className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition shadow-2xs"
+                  >
+                    <span>⚡ Activate for {selectedBank.name}</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-[10.5px] uppercase font-bold text-slate-500 block mb-0.5">
-                Session Inactivity Timeout
-              </span>
-              <p className="text-xs font-bold text-slate-900">{bankAddenda.sessionTimeout}</p>
-            </div>
-
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-              <span className="text-[10.5px] uppercase font-bold text-slate-500 block mb-0.5">
-                Step-Up Authentication Trigger
-              </span>
-              <p className="text-xs font-bold text-slate-900">{bankAddenda.mfaRule}</p>
-            </div>
-
-            <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 space-y-1">
-              <span className="text-[10.5px] uppercase font-bold text-slate-500 block">
-                Institution Addendum Clause
-              </span>
-              <p className="text-xs font-mono text-slate-900 bg-white p-2 rounded border border-slate-200 leading-relaxed">
-                "{bankAddenda.customClause}"
-              </p>
-            </div>
+          <div className="pt-2 text-[10.5px] text-slate-400 font-medium text-right">
+            Modified by: {bankAddenda.lastModifiedBy || 'Authorized Officer'}
           </div>
         </div>
       </div>
 
-      {/* 6. Module Details & Logged Artifacts */}
+      {/* 4. Operational Telemetry & KPI Cards */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 space-y-4 shadow-2xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+          <div>
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-blue-600" />
+              <span>{telemetry.title}</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              {telemetry.subtitle}
+            </p>
+          </div>
+
+          {/* Time Range Selector */}
+          <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-[10.5px]">
+            {['1h', '24h', '7d', '30d'].map(range => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-2 py-0.5 rounded font-bold transition cursor-pointer ${
+                  timeRange === range
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+              >
+                {range.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+          {/* Waveform Chart (7 cols) */}
+          <div className="lg:col-span-7 h-36 w-full relative pt-1">
+            <svg className="w-full h-full overflow-visible" viewBox="0 0 400 120">
+              <defs>
+                <linearGradient id="streamlineGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#0284c7" stopOpacity="0.0" />
+                </linearGradient>
+              </defs>
+
+              {/* Grid Lines */}
+              <line x1="0" y1="20" x2="400" y2="20" stroke="#f1f5f9" strokeDasharray="3 3" />
+              <line x1="0" y1="60" x2="400" y2="60" stroke="#e2e8f0" strokeDasharray="3 3" />
+              <line x1="0" y1="100" x2="400" y2="100" stroke="#f1f5f9" strokeDasharray="3 3" />
+
+              {/* Shaded Area */}
+              <path
+                d={`${telemetry.pathD} L 400 115 L 0 115 Z`}
+                fill="url(#streamlineGrad)"
+              />
+
+              {/* Primary Line */}
+              <path
+                d={telemetry.pathD}
+                fill="none"
+                stroke="#0284c7"
+                strokeWidth="2.2"
+              />
+
+              {/* Secondary Line */}
+              <path
+                d={telemetry.pathD2}
+                fill="none"
+                stroke="#059669"
+                strokeWidth="1.6"
+                strokeDasharray="4 3"
+              />
+
+              {/* Interactive Points */}
+              {telemetry.points.map((pt, idx) => (
+                <g 
+                  key={idx}
+                  className="cursor-pointer"
+                  onMouseEnter={() => setHoveredPoint(pt)}
+                  onMouseLeave={() => setHoveredPoint(null)}
+                >
+                  <circle 
+                    cx={pt.x} 
+                    cy={pt.y1} 
+                    r={hoveredPoint?.time === pt.time ? 5 : 3.5} 
+                    fill="#0284c7" 
+                    stroke="#ffffff" 
+                    strokeWidth="1.5" 
+                  />
+                </g>
+              ))}
+            </svg>
+
+            {/* Hover Tooltip */}
+            {hoveredPoint && (
+              <div 
+                style={{ left: `${Math.min(Math.max((hoveredPoint.x / 400) * 100, 10), 85)}%` }}
+                className="absolute top-2 -translate-x-1/2 bg-slate-900 text-white text-[10px] font-mono px-2 py-1 rounded shadow-lg pointer-events-none z-10 space-y-0.5"
+              >
+                <div className="font-bold text-slate-300">{hoveredPoint.time} ({timeRange.toUpperCase()})</div>
+                <div className="text-sky-300">{telemetry.line1Name}: {hoveredPoint.val1}</div>
+                <div className="text-emerald-300">{telemetry.line2Name}: {hoveredPoint.val2}</div>
+              </div>
+            )}
+
+            <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1 px-1">
+              <span>00:00</span>
+              <span>06:00</span>
+              <span>12:00</span>
+              <span>18:00</span>
+              <span>21:00</span>
+            </div>
+          </div>
+
+          {/* 3 KPI Cards (5 cols) */}
+          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 gap-2.5">
+            {(policy.metricsTable || []).slice(0, 3).map((row, idx) => (
+              <div key={idx} className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg flex items-center justify-between text-xs">
+                <div>
+                  <div className="font-semibold text-slate-700 text-[11px] truncate max-w-[160px]">{row.metric}</div>
+                  <div className="text-[10px] text-slate-400 font-mono">Target: {row.target}</div>
+                </div>
+                <div className="text-right">
+                  <div className="font-mono font-bold text-slate-900 text-xs">{row.actual}</div>
+                  <span className="text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                    {row.status}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Logged Notes & Artifacts (Clean & Simple) */}
       <div className="space-y-2.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-700">
-            Module Details & Logged Artifacts
+            Compliance Notes & Operational Artifacts
           </div>
 
           <div className="flex items-center gap-1 text-xs">
-            {['ALL', 'TRAINING', 'REVIEW', 'ISSUES', 'MINUTES'].map((tab) => (
+            {['ALL', 'TRAINING', 'ISSUES', 'MINUTES'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -221,7 +483,6 @@ export default function PolicyWorkspacePane({
                 }`}
               >
                 {tab === 'TRAINING' && '🎓 Training'}
-                {tab === 'REVIEW' && '💬 Review'}
                 {tab === 'ISSUES' && '⚠️ Issues'}
                 {tab === 'MINUTES' && '📝 Minutes'}
                 {tab === 'ALL' && 'All'}
@@ -230,142 +491,28 @@ export default function PolicyWorkspacePane({
           </div>
         </div>
 
-        {/* Artifact Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {filteredArtifacts.map((art) => {
-            const isTraining = art.type === 'Training';
-            const isIssue = art.type === 'Issues';
-            return (
-              <div
-                key={art.id}
-                className="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 shadow-2xs"
-              >
-                <div className="flex items-center justify-between">
-                  <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded border ${
-                    isTraining
-                      ? 'bg-sky-50 text-sky-800 border-sky-200'
-                      : isIssue
-                      ? 'bg-amber-50 text-amber-900 border-amber-200'
-                      : 'bg-slate-100 text-slate-800 border-slate-200'
-                  }`}>
-                    {art.tag}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-mono">{art.location}</span>
-                </div>
-                <h4 className="text-xs font-bold text-slate-900">
-                  {art.title}
-                </h4>
-                <p className="text-[11.5px] text-slate-600 leading-relaxed">
-                  {art.content}
-                </p>
+          {filteredArtifacts.map((art) => (
+            <div
+              key={art.id}
+              className="bg-white border border-slate-200 rounded-lg p-3 space-y-1.5 shadow-2xs text-xs"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold bg-slate-100 text-slate-800 px-1.5 py-0.2 rounded border border-slate-200">
+                  {art.tag}
+                </span>
+                <span className="text-[10px] text-slate-400 font-mono">{art.location}</span>
               </div>
-            );
-          })}
+              <h4 className="text-xs font-bold text-slate-900">
+                {art.title}
+              </h4>
+              <p className="text-[11.5px] text-slate-600 leading-relaxed">
+                {art.content}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
-
-      {/* 7. Metrics & Telemetry */}
-      {policy.metricsTable && (
-        <div className="space-y-2.5">
-          <div className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
-            <span>Metrics & Settlement Latency Telemetry</span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Waveform Chart */}
-            <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 shadow-2xs">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-bold text-slate-800 text-[11px]">Settlement Requests (K/min) vs Latency (ms)</span>
-                <div className="flex items-center gap-3 text-[10px] font-mono text-slate-500">
-                  <span className="flex items-center gap-1 text-cyan-700">
-                    <span className="w-2.5 h-0.5 bg-cyan-600"></span> Latency (ms)
-                  </span>
-                  <span className="flex items-center gap-1 text-emerald-700">
-                    <span className="w-2.5 h-0.5 bg-emerald-600"></span> Throughput
-                  </span>
-                </div>
-              </div>
-
-              <div className="h-36 w-full relative pt-1">
-                <svg className="w-full h-full overflow-visible" viewBox="0 0 400 120">
-                  <defs>
-                    <linearGradient id="chartFill2" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#06b6d4" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.0" />
-                    </linearGradient>
-                  </defs>
-
-                  <line x1="0" y1="20" x2="400" y2="20" stroke="#f1f5f9" strokeDasharray="3 3" />
-                  <line x1="0" y1="60" x2="400" y2="60" stroke="#e2e8f0" strokeDasharray="3 3" />
-                  <line x1="0" y1="100" x2="400" y2="100" stroke="#f1f5f9" strokeDasharray="3 3" />
-
-                  <path
-                    d="M 0 100 Q 50 105, 100 70 T 200 25 T 300 55 T 400 85 L 400 115 L 0 115 Z"
-                    fill="url(#chartFill2)"
-                  />
-
-                  <path
-                    d="M 0 100 Q 50 105, 100 70 T 200 25 T 300 55 T 400 85"
-                    fill="none"
-                    stroke="#0891b2"
-                    strokeWidth="2.2"
-                  />
-
-                  <path
-                    d="M 0 95 Q 60 85, 120 65 T 220 35 T 320 45 T 400 75"
-                    fill="none"
-                    stroke="#059669"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 3"
-                  />
-
-                  <circle cx="200" cy="25" r="3.5" fill="#0891b2" stroke="#ffffff" strokeWidth="1.5" />
-                </svg>
-
-                <div className="flex justify-between text-[10px] font-mono text-slate-400 mt-1 px-1">
-                  <span>00:00</span>
-                  <span>06:00</span>
-                  <span>12:00</span>
-                  <span>18:00</span>
-                  <span>21:00</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 shadow-2xs">
-              <span className="font-bold text-slate-800 text-[11px] block">Detailed Metrics Breakdown</span>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="text-slate-400 text-[10px] uppercase border-b border-slate-200">
-                      <th className="pb-1.5 font-bold">Metric</th>
-                      <th className="pb-1.5 font-bold">Target</th>
-                      <th className="pb-1.5 font-bold">Actual</th>
-                      <th className="pb-1.5 font-bold text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {policy.metricsTable.map((row, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="py-2 font-medium text-slate-800">{row.metric}</td>
-                        <td className="py-2 font-mono text-slate-500">{row.target}</td>
-                        <td className="py-2 font-mono font-bold text-slate-900">{row.actual}</td>
-                        <td className="py-2 text-right">
-                          <span className="text-[10px] font-mono font-bold bg-emerald-50 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-200">
-                            {row.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
