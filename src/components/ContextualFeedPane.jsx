@@ -27,7 +27,7 @@ export default function ContextualFeedPane({
   onToggleCollapse,
   width = 320
 }) {
-  const [activeFilter, setActiveFilter] = useState('ALL'); // 'ALL' | 'NOTES' | 'REVIEW' | 'ISSUES' | 'MINUTES'
+  const [activeFilter, setActiveFilter] = useState('NOTES'); // 'NOTES' | 'REVIEW' | 'ISSUES' | 'MINUTES' | 'ALL'
   const [composerMode, setComposerMode] = useState('NOTE'); // 'NOTE' | 'CHANGE_REQUEST'
   
   // Note form state
@@ -184,9 +184,9 @@ export default function ContextualFeedPane({
           )}
         </div>
 
-        {/* 5 Classic Filter Tabs matching image */}
+        {/* 5 Classic Filter Tabs: Notes first, All at the end */}
         <div className="px-2 py-1.5 border-b border-slate-200 flex items-center gap-1 overflow-x-auto custom-scrollbar bg-white text-[10.5px]">
-          {['ALL', 'NOTES', 'REVIEW', 'ISSUES', 'MINUTES'].map((key) => (
+          {['NOTES', 'REVIEW', 'ISSUES', 'MINUTES', 'ALL'].map((key) => (
             <button
               key={key}
               onClick={() => setActiveFilter(key)}
@@ -196,11 +196,11 @@ export default function ContextualFeedPane({
                   : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
-              {key === 'ALL' && 'All'}
               {key === 'NOTES' && '🎓 Notes'}
               {key === 'REVIEW' && '💬 Review'}
               {key === 'ISSUES' && '⚠️ Issues'}
               {key === 'MINUTES' && '📝 Minutes'}
+              {key === 'ALL' && 'All'}
             </button>
           ))}
         </div>
