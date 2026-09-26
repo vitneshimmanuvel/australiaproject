@@ -11,16 +11,24 @@ import AddPolicyModal from './components/AddPolicyModal';
 import ExportModal from './components/ExportModal';
 import { PanelLeftOpen, PanelRightOpen, MessageSquare } from 'lucide-react';
 
-import { banksList, bankingHierarchy, policiesDatabase, userRoles, auditHistoryLogs } from './data/mockData';
+import { 
+  banksList, 
+  bankingHierarchy, 
+  policiesDatabase, 
+  userRoles, 
+  bankingProducts,
+  auditHistoryLogs 
+} from './data/mockData';
 
 export default function App() {
-  // Current user role (Library Staff Admin or Bank Representative)
-  const [currentUser, setCurrentUser] = useState(userRoles[0]); // Sarah Jenkins (Master Admin)
-  const [currentView, setCurrentView] = useState('LIBRARY'); // 'LIBRARY' | 'ADMIN'
+  // Current user role: Default to CBA Employee / Security Architect for intuitive onboarding
+  const [currentUser, setCurrentUser] = useState(userRoles[1] || userRoles[0]); 
+  const [currentView, setCurrentView] = useState('LIBRARY'); // Unified single-screen workspace
 
   // Data states
   const [banks, setBanks] = useState(banksList);
   const [selectedBank, setSelectedBank] = useState(banksList[0]); // Commonwealth Bank by default
+  const [selectedProduct, setSelectedProduct] = useState('credit-cards'); // 'credit-cards' default | 'personal-loans' | 'mortgages' | 'deposits' | 'all'
   const [selectedPolicyId, setSelectedPolicyId] = useState('oauth-sso');
   const [policies, setPolicies] = useState(policiesDatabase);
   const [hierarchy, setHierarchy] = useState(bankingHierarchy);
@@ -31,8 +39,8 @@ export default function App() {
   const [isRightOpen, setIsRightOpen] = useState(true);
 
   // Desktop draggable widths
-  const [leftWidth, setLeftWidth] = useState(270);
-  const [rightWidth, setRightWidth] = useState(300);
+  const [leftWidth, setLeftWidth] = useState(280);
+  const [rightWidth, setRightWidth] = useState(320);
 
   // Dragging active states
   const [isDraggingLeft, setIsDraggingLeft] = useState(false);
@@ -54,12 +62,12 @@ export default function App() {
   useEffect(() => {
     const handleMouseMove = (e) => {
       if (isDraggingLeft) {
-        // Constrain left hierarchy pane between 180px and 480px
-        const newLeftWidth = Math.min(Math.max(e.clientX, 180), 480);
+        // Constrain left hierarchy pane between 200px and 500px
+        const newLeftWidth = Math.min(Math.max(e.clientX, 200), 500);
         setLeftWidth(newLeftWidth);
       } else if (isDraggingRight) {
-        // Constrain right feed pane between 220px and 480px
-        const newRightWidth = Math.min(Math.max(window.innerWidth - e.clientX, 220), 480);
+        // Constrain right feed pane between 240px and 500px
+        const newRightWidth = Math.min(Math.max(window.innerWidth - e.clientX, 240), 500);
         setRightWidth(newRightWidth);
       }
     };
@@ -87,16 +95,34 @@ export default function App() {
     };
   }, [isDraggingLeft, isDraggingRight]);
 
+  // Handle selecting bank from sidebar
+  const handleSelectBank = (bank) => {
+    setSelectedBank(bank);
+    // Also align user role with selected bank if needed
+    const matchingRole = userRoles.find(u => u.bankId === bank.id && u.roleType === currentUser.roleType) ||
+      userRoles.find(u => u.bankId === bank.id) || currentUser;
+    setCurrentUser(matchingRole);
+  };
+
   // Handle switching user roles
   const handleSelectUser = (user) => {
     setCurrentUser(user);
-    if (user.type === 'bank') {
+    if (user.bankId) {
       const matchingBank = banks.find(b => b.id === user.bankId) || banks[0];
       setSelectedBank(matchingBank);
-      setCurrentView('LIBRARY');
-    } else {
-      setCurrentView('ADMIN');
     }
+  };
+
+  // Fast toggle between Submitter (Employee) and Approver (Manager) personas
+  const handleQuickToggleUserRole = () => {
+    const currentBankId = selectedBank?.id || 'cba';
+    const isCurrentlyManager = currentUser.roleType === 'manager';
+    const targetRoleType = isCurrentlyManager ? 'employee' : 'manager';
+
+    const targetUser = userRoles.find(u => u.bankId === currentBankId && u.roleType === targetRoleType) ||
+      userRoles.find(u => u.roleType === targetRoleType) || userRoles[0];
+
+    setCurrentUser(targetUser);
   };
 
   // Active policy
@@ -200,7 +226,7 @@ export default function App() {
     });
   };
 
-  // Handle adding new master policy from Admin Panel or Hierarchy Sidebar
+  // Handle adding new master policy from Modal
   const handleAddNewPolicy = ({
     domainId,
     domainLabel,
@@ -268,16 +294,14 @@ export default function App() {
     setSelectedPolicyId(policy.id);
   };
 
-  // Handle deleting/removing a policy specification
+  // Handle deleting a policy specification
   const handleDeletePolicy = (policyIdToDelete) => {
-    // 1. Remove from policies state
     setPolicies(prev => {
       const copy = { ...prev };
       delete copy[policyIdToDelete];
       return copy;
     });
 
-    // 2. Remove from hierarchy state
     setHierarchy(prevHierarchy => {
       return prevHierarchy.map(domain => ({
         ...domain,
@@ -288,7 +312,6 @@ export default function App() {
       })).filter(domain => domain.children && domain.children.length > 0);
     });
 
-    // 3. Log audit
     auditHistoryLogs.unshift({
       id: `log-${Date.now()}`,
       timestamp: 'Just now',
@@ -298,7 +321,6 @@ export default function App() {
       detail: 'Standard deleted from the central library reference baseline.',
     });
 
-    // 4. Update selection if currently selected
     if (selectedPolicyId === policyIdToDelete) {
       setSelectedPolicyId('oauth-sso');
     }
@@ -319,6 +341,116 @@ export default function App() {
     });
   };
 
+  // Handle Manager Accepting / Approving a Change Request in the Contextual Feed
+  const handleAcceptRequest = (commentId, signOffNote, item) => {
+    if (!activePolicy) return;
+
+    setPolicies(prev => {
+      const current = prev[activePolicy.id] || activePolicy;
+      const updatedComments = (current.comments || []).map(c => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            status: 'APPROVED',
+            reviewerName: currentUser.name,
+            reviewNote: signOffNote,
+            reviewedAt: 'Just now',
+          };
+        }
+        return c;
+      });
+
+      // Also create an official Minutes audit entry
+      const minutesLog = {
+        id: `c-min-${Date.now()}`,
+        type: 'COMMENT',
+        category: 'Minutes',
+        badge: 'Risk Committee Sign-off',
+        author: currentUser.name,
+        authorRole: currentUser.role || 'Risk Manager (Approver)',
+        avatar: currentUser.avatar || 'RM',
+        time: 'Just now',
+        content: `Formal Committee Sign-Off: Approved '${item?.title || 'Policy Variance'}' for ${selectedBank.name}. Enforced note: "${signOffNote}".`,
+      };
+
+      // Apply operational addenda timeout/rules if specified
+      const currentBankAddenda = current.bankCustomAddenda?.[selectedBank.id] || {
+        sessionTimeout: '15 Minutes Inactivity / 8h Absolute',
+        mfaRule: 'Transfers > $5,000 AUD or Novel IP',
+        customClause: 'Institutional operational baseline active.',
+        lastModifiedBy: currentUser.name,
+      };
+
+      const updatedAddenda = {
+        ...currentBankAddenda,
+        sessionTimeout: item?.proposedTimeout || currentBankAddenda.sessionTimeout,
+        mfaRule: item?.proposedMfaRule || currentBankAddenda.mfaRule,
+        status: 'ACTIVE',
+        lastModifiedBy: `${currentUser.name} (Approved Variance)`,
+      };
+
+      return {
+        ...prev,
+        [activePolicy.id]: {
+          ...current,
+          bankCustomAddenda: {
+            ...current.bankCustomAddenda,
+            [selectedBank.id]: updatedAddenda,
+          },
+          comments: [minutesLog, ...updatedComments],
+        }
+      };
+    });
+
+    // Immutable Audit Trail Entry
+    auditHistoryLogs.unshift({
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actor: `${currentUser.name} (${selectedBank.name} Risk Manager)`,
+      action: 'Approved & Enforced Policy Variance Request',
+      target: `${activePolicy.title} (${item?.targetProduct || 'Retail'})`,
+      detail: `Approved: "${signOffNote}" | New Timeout: ${item?.proposedTimeout || 'Active'}`,
+    });
+  };
+
+  // Handle Manager Rejecting a Change Request in the Contextual Feed
+  const handleRejectRequest = (commentId, rejectionReason) => {
+    if (!activePolicy) return;
+
+    setPolicies(prev => {
+      const current = prev[activePolicy.id] || activePolicy;
+      const updatedComments = (current.comments || []).map(c => {
+        if (c.id === commentId) {
+          return {
+            ...c,
+            status: 'REJECTED',
+            reviewerName: currentUser.name,
+            reviewNote: rejectionReason,
+            reviewedAt: 'Just now',
+          };
+        }
+        return c;
+      });
+
+      return {
+        ...prev,
+        [activePolicy.id]: {
+          ...current,
+          comments: updatedComments,
+        }
+      };
+    });
+
+    auditHistoryLogs.unshift({
+      id: `log-${Date.now()}`,
+      timestamp: 'Just now',
+      actor: `${currentUser.name} (${selectedBank.name} Risk Manager)`,
+      action: 'Rejected Policy Variance Request',
+      target: activePolicy.title,
+      detail: `Rejected: "${rejectionReason}"`,
+    });
+  };
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#f8fafc] text-slate-900 font-sans">
       {/* Top Application Bar */}
@@ -334,135 +466,124 @@ export default function App() {
         isRightOpen={isRightOpen}
         onToggleRight={() => setIsRightOpen(!isRightOpen)}
         commentsCount={(activePolicy?.comments || []).length}
-        currentView={currentView}
-        setCurrentView={setCurrentView}
+        selectedBank={selectedBank}
+        selectedProduct={selectedProduct}
       />
 
-      {/* Main Workspace: 3-Pane Reference Library OR Staff Admin Panel */}
-      {currentView === 'ADMIN' && currentUser.type === 'admin' ? (
-        <AdminDashboard
+      {/* Main Single-Screen Workspace: 3-Pane Layout matching PDF & Screenshots */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Left Expand Pill when Left Sidebar is Collapsed on Desktop */}
+        {!isLeftOpen && (
+          <button
+            onClick={() => setIsLeftOpen(true)}
+            title="Expand Hierarchy Tree"
+            className="hidden md:flex absolute left-2 top-3 z-20 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-slate-900 p-1.5 rounded-lg shadow-sm transition cursor-pointer"
+          >
+            <PanelLeftOpen className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Pane 1: Banking Regulatory Hierarchy (Banks + Products + Active Filters + Tree) */}
+        <HierarchyPane
+          hierarchy={hierarchy}
           banks={banks}
+          selectedBank={selectedBank}
+          onSelectBank={handleSelectBank}
+          selectedProduct={selectedProduct}
+          onSelectProduct={setSelectedProduct}
+          products={bankingProducts}
+          selectedItemId={selectedPolicyId}
+          onSelectItem={(id) => {
+            if (policies[id]) {
+              setSelectedPolicyId(id);
+            } else {
+              setSelectedPolicyId('oauth-sso');
+            }
+          }}
+          isMobileOpen={isMobileLeftOpen}
+          onCloseMobile={() => setIsMobileLeftOpen(false)}
+          isCollapsed={!isLeftOpen}
+          onToggleCollapse={() => setIsLeftOpen(false)}
+          width={leftWidth}
           policies={policies}
-          onSelectBank={(b) => setSelectedBank(b)}
-          onOpenEditMasterModal={(polId) => {
-            setTargetMasterPolicyId(polId);
-            setIsEditMasterModalOpen(true);
-          }}
-          onOpenBankCustomModal={(polId, b) => {
-            setSelectedPolicyId(polId);
-            setSelectedBank(b);
-            setIsEditBankModalOpen(true);
-          }}
           onOpenAddPolicyModal={() => setIsAddPolicyModalOpen(true)}
-          onOpenExportModal={() => setIsExportModalOpen(true)}
-          onSwitchToLibraryView={() => setCurrentView('LIBRARY')}
-          onSelectPolicy={(polId) => setSelectedPolicyId(polId)}
+          onDeletePolicy={handleDeletePolicy}
         />
-      ) : (
-        <div className="flex flex-1 overflow-hidden relative">
-          {/* Left Expand Pill when Left Sidebar is Collapsed on Desktop */}
-          {!isLeftOpen && (
-            <button
-              onClick={() => setIsLeftOpen(true)}
-              title="Expand Hierarchy Tree"
-              className="hidden md:flex absolute left-2 top-3 z-20 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-slate-900 p-1.5 rounded-lg shadow-sm transition cursor-pointer"
-            >
-              <PanelLeftOpen className="w-4 h-4" />
-            </button>
-          )}
 
-          {/* Pane 1: Banking Regulatory Architecture Hierarchy (Collapsible & Draggable) */}
-          <HierarchyPane
-            hierarchy={hierarchy}
-            selectedItemId={selectedPolicyId}
-            onSelectItem={(id) => {
-              if (policies[id]) {
-                setSelectedPolicyId(id);
-              } else {
-                setSelectedPolicyId('oauth-sso');
-              }
+        {/* Draggable Divider Handle (Left Sidebar <-> Center Workspace) */}
+        {isLeftOpen && (
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDraggingLeft(true);
             }}
-            isMobileOpen={isMobileLeftOpen}
-            onCloseMobile={() => setIsMobileLeftOpen(false)}
-            isCollapsed={!isLeftOpen}
-            onToggleCollapse={() => setIsLeftOpen(false)}
-            width={leftWidth}
-            selectedBank={selectedBank}
-            policies={policies}
-            onOpenAddPolicyModal={() => setIsAddPolicyModalOpen(true)}
-            onDeletePolicy={handleDeletePolicy}
-          />
+            onDoubleClick={() => setLeftWidth(280)}
+            title="Drag to resize hierarchy sidebar (Double-click to reset width)"
+            className={`hidden md:flex w-1.5 hover:w-2 bg-transparent hover:bg-blue-500/20 active:bg-blue-600 transition-colors cursor-col-resize z-20 flex-col items-center justify-center select-none group ${
+              isDraggingLeft ? 'bg-blue-600 !w-2' : ''
+            }`}
+          >
+            <div className="h-8 w-1 bg-slate-300 group-hover:bg-blue-500 rounded-full transition-colors" />
+          </div>
+        )}
 
-          {/* Draggable Divider Handle (Left Sidebar <-> Center Workspace) */}
-          {isLeftOpen && (
-            <div
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setIsDraggingLeft(true);
-              }}
-              onDoubleClick={() => setLeftWidth(270)}
-              title="Drag to resize hierarchy sidebar (Double-click to reset width)"
-              className={`hidden md:flex w-1.5 hover:w-2 bg-transparent hover:bg-blue-500/20 active:bg-blue-600 transition-colors cursor-col-resize z-20 flex-col items-center justify-center select-none group ${
-                isDraggingLeft ? 'bg-blue-600 !w-2' : ''
-              }`}
-            >
-              <div className="h-8 w-1 bg-slate-300 group-hover:bg-blue-500 rounded-full transition-colors" />
-            </div>
-          )}
+        {/* Pane 2: Detailed Policy Workspace (Intent + Comparison + Active Toggle + Telemetry Chart + KPIs) */}
+        <PolicyWorkspacePane
+          policy={activePolicy}
+          selectedBank={selectedBank}
+          onOpenEditModal={() => setIsEditBankModalOpen(true)}
+          onOpenExportModal={() => setIsExportModalOpen(true)}
+          onTogglePolicyActive={handleTogglePolicyActive}
+        />
 
-          {/* Pane 2: Detailed Policy Workspace (Responsive, Expands to fill available width) */}
-          <PolicyWorkspacePane
-            policy={activePolicy}
-            selectedBank={selectedBank}
-            onOpenEditModal={() => setIsEditBankModalOpen(true)}
-            onOpenExportModal={() => setIsExportModalOpen(true)}
-            onTogglePolicyActive={handleTogglePolicyActive}
-          />
+        {/* Draggable Divider Handle (Center Workspace <-> Right Feed) */}
+        {isRightOpen && (
+          <div
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDraggingRight(true);
+            }}
+            onDoubleClick={() => setRightWidth(320)}
+            title="Drag to resize Contextual Feed (Double-click to reset width)"
+            className={`hidden lg:flex w-1.5 hover:w-2 bg-transparent hover:bg-blue-500/20 active:bg-blue-600 transition-colors cursor-col-resize z-20 flex-col items-center justify-center select-none group ${
+              isDraggingRight ? 'bg-blue-600 !w-2' : ''
+            }`}
+          >
+            <div className="h-8 w-1 bg-slate-300 group-hover:bg-blue-500 rounded-full transition-colors" />
+          </div>
+        )}
 
-          {/* Draggable Divider Handle (Center Workspace <-> Right Feed) */}
-          {isRightOpen && (
-            <div
-              onMouseDown={(e) => {
-                e.preventDefault();
-                setIsDraggingRight(true);
-              }}
-              onDoubleClick={() => setRightWidth(300)}
-              title="Drag to resize Contextual Feed (Double-click to reset width)"
-              className={`hidden lg:flex w-1.5 hover:w-2 bg-transparent hover:bg-blue-500/20 active:bg-blue-600 transition-colors cursor-col-resize z-20 flex-col items-center justify-center select-none group ${
-                isDraggingRight ? 'bg-blue-600 !w-2' : ''
-              }`}
-            >
-              <div className="h-8 w-1 bg-slate-300 group-hover:bg-blue-500 rounded-full transition-colors" />
-            </div>
-          )}
+        {/* Right Expand Pill when Right Feed is Collapsed on Desktop */}
+        {!isRightOpen && (
+          <button
+            onClick={() => setIsRightOpen(true)}
+            title="Expand Contextual Feed"
+            className="hidden lg:flex absolute right-2 top-3 z-20 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-slate-900 px-2 py-1 rounded-lg shadow-sm transition items-center gap-1.5 text-xs font-semibold cursor-pointer"
+          >
+            <PanelRightOpen className="w-3.5 h-3.5 text-blue-600" />
+            <span>Feed</span>
+            <span className="text-[10px] font-mono bg-slate-100 px-1 rounded-full font-bold">
+              {(activePolicy?.comments || []).length}
+            </span>
+          </button>
+        )}
 
-          {/* Right Expand Pill when Right Feed is Collapsed on Desktop */}
-          {!isRightOpen && (
-            <button
-              onClick={() => setIsRightOpen(true)}
-              title="Expand Contextual Feed"
-              className="hidden lg:flex absolute right-2 top-3 z-20 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 hover:text-slate-900 px-2 py-1 rounded-lg shadow-sm transition items-center gap-1.5 text-xs font-semibold cursor-pointer"
-            >
-              <PanelRightOpen className="w-3.5 h-3.5 text-blue-600" />
-              <span>Feed</span>
-              <span className="text-[10px] font-mono bg-slate-100 px-1 rounded-full font-bold">
-                {(activePolicy?.comments || []).length}
-              </span>
-            </button>
-          )}
-
-          {/* Pane 3: Contextual Review Feed (Collapsible & Draggable) */}
-          <ContextualFeedPane
-            comments={activePolicy?.comments || []}
-            onAddComment={handleAddComment}
-            isMobileOpen={isMobileRightOpen}
-            onCloseMobile={() => setIsMobileRightOpen(false)}
-            isCollapsed={!isRightOpen}
-            onToggleCollapse={() => setIsRightOpen(false)}
-            width={rightWidth}
-          />
-        </div>
-      )}
+        {/* Pane 3: Contextual Review Feed (Change Requests + Accept/Reject Sign-Off + Notes + Minutes) */}
+        <ContextualFeedPane
+          comments={activePolicy?.comments || []}
+          onAddComment={handleAddComment}
+          onAcceptRequest={handleAcceptRequest}
+          onRejectRequest={handleRejectRequest}
+          currentUser={currentUser}
+          onQuickToggleUserRole={handleQuickToggleUserRole}
+          activePolicyTitle={activePolicy?.title}
+          isMobileOpen={isMobileRightOpen}
+          onCloseMobile={() => setIsMobileRightOpen(false)}
+          isCollapsed={!isRightOpen}
+          onToggleCollapse={() => setIsRightOpen(false)}
+          width={rightWidth}
+        />
+      </div>
 
       {/* User Account / Role Switcher Modal */}
       <RoleLoginModal
@@ -497,7 +618,7 @@ export default function App() {
         onAddPolicy={handleAddNewPolicy}
       />
 
-      {/* Export Specification Modal */}
+      {/* Export Specification Certificate Modal */}
       <ExportModal
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}

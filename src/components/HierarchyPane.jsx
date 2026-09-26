@@ -14,20 +14,29 @@ import {
   Search,
   Plus,
   Trash2,
-  CheckCircle2
+  Layers
 } from 'lucide-react';
-import { bankingHierarchy as defaultBankingHierarchy } from '../data/mockData';
+import { 
+  bankingHierarchy as defaultBankingHierarchy, 
+  banksList as defaultBanksList,
+  bankingProducts as defaultBankingProducts 
+} from '../data/mockData';
 
 export default function HierarchyPane({ 
   hierarchy = defaultBankingHierarchy,
+  banks = defaultBanksList,
+  selectedBank,
+  onSelectBank,
+  selectedProduct = 'credit-cards',
+  onSelectProduct,
+  products = defaultBankingProducts,
   selectedItemId, 
   onSelectItem,
   isMobileOpen,
   onCloseMobile,
   isCollapsed = false,
   onToggleCollapse,
-  width = 270,
-  selectedBank,
+  width = 280,
   policies = {},
   onOpenAddPolicyModal,
   onDeletePolicy
@@ -35,98 +44,81 @@ export default function HierarchyPane({
   const [filterQuery, setFilterQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'INACTIVE'
   
-  const [expandedNodes, setExpandedNodes] = useState({
-    'prudential-standards': true,
-    'cps-234-group': true,
-    'cps-230-group': true,
-    'privacy-data-governance': true,
-    'app-privacy-group': true,
-    'financial-crime-aml': true,
-    'aml-transaction-monitoring': true,
-    'payment-rails-gateway': true,
-    'payment-gateways-group': true,
+  // Initially only CBA is open, everything else collapsed
+  const [expandedBanks, setExpandedBanks] = useState({
+    'cba': true,
+    'nab': false,
+    'wbc': false,
+    'anz': false,
   });
 
-  const toggleNode = (nodeId) => {
-    setExpandedNodes(prev => ({
+  // Initially Credit Cards under CBA is open, other products collapsed
+  const [expandedProducts, setExpandedProducts] = useState({
+    'cba-credit-cards': true,
+  });
+
+  // Statutory folders start collapsed so user can manually expand what they need
+  const [expandedFolders, setExpandedFolders] = useState({});
+
+  const toggleBank = (bankId) => {
+    setExpandedBanks(prev => ({
       ...prev,
-      [nodeId]: !prev[nodeId]
+      [bankId]: !prev[bankId]
     }));
   };
 
-  // Clean, subtle monochrome domain icons
+  const toggleProduct = (prodKey) => {
+    setExpandedProducts(prev => ({
+      ...prev,
+      [prodKey]: !prev[prodKey]
+    }));
+  };
+
+  const toggleFolder = (folderId) => {
+    setExpandedFolders(prev => ({
+      ...prev,
+      [folderId]: !prev[folderId]
+    }));
+  };
+
+  // Clean, subtle domain icons
   const getDomainIcon = (id) => {
     switch (id) {
       case 'prudential-standards': return <Shield className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />;
       case 'privacy-data-governance': return <Lock className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />;
       case 'financial-crime-aml': return <Landmark className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />;
       case 'payment-rails-gateway': return <CreditCard className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />;
-      default: return <Database className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />;
+      default: return <Folder className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />;
     }
   };
 
-  // Calculate active and inactive counts for this bank
+  // Product categories in order requested: Credit Cards first, All Retail Standards at the end
+  const productNodes = [
+    { id: 'credit-cards', label: 'Credit Cards', short: 'Cards' },
+    { id: 'personal-loans', label: 'Personal Loans', short: 'Loans' },
+    { id: 'mortgages', label: 'Mortgages & Home Loans', short: 'Mortgages' },
+    { id: 'deposits', label: 'Deposits & Savings', short: 'Deposits' },
+    { id: 'all', label: 'All Retail Standards', short: 'All' },
+  ];
+
+  // Calculate active and inactive counts for active bank & product
   const { totalCount, activeCount, inactiveCount } = useMemo(() => {
     const policyList = Object.values(policies);
-    const active = policyList.filter(p => {
+    const filteredByProduct = selectedProduct === 'all' 
+      ? policyList 
+      : policyList.filter(p => !p.applicableProducts || p.applicableProducts.includes(selectedProduct));
+
+    const active = filteredByProduct.filter(p => {
       const addenda = p.bankCustomAddenda?.[selectedBank?.id];
       return addenda && addenda.status !== 'INACTIVE';
     }).length;
+
     return {
-      totalCount: policyList.length,
+      totalCount: filteredByProduct.length,
       activeCount: active,
-      inactiveCount: policyList.length - active
+      inactiveCount: filteredByProduct.length - active
     };
-  }, [policies, selectedBank]);
-
-  // Filter hierarchy tree based on search query and status filter
-  const filteredHierarchy = useMemo(() => {
-    const q = filterQuery.toLowerCase().trim();
-
-    return hierarchy
-      .map(domain => {
-        const matchingGroups = (domain.children || [])
-          .map(group => {
-            const matchingLeaves = (group.children || []).filter(leaf => {
-              const pol = policies[leaf.id];
-              const isBankActive = Boolean(
-                pol?.bankCustomAddenda?.[selectedBank?.id] &&
-                pol.bankCustomAddenda[selectedBank.id].status !== 'INACTIVE'
-              );
-
-              // Status filter check
-              if (statusFilter === 'ACTIVE' && !isBankActive) return false;
-              if (statusFilter === 'INACTIVE' && isBankActive) return false;
-
-              // Search query check
-              if (!q) return true;
-              return (
-                leaf.label.toLowerCase().includes(q) || 
-                leaf.id.toLowerCase().includes(q) ||
-                (leaf.version && leaf.version.toLowerCase().includes(q))
-              );
-            });
-
-            if (matchingLeaves.length > 0) {
-              return {
-                ...group,
-                children: matchingLeaves,
-              };
-            }
-            return null;
-          })
-          .filter(Boolean);
-
-        if (matchingGroups.length > 0) {
-          return {
-            ...domain,
-            children: matchingGroups,
-          };
-        }
-        return null;
-      })
-      .filter(Boolean);
-  }, [hierarchy, filterQuery, statusFilter, policies, selectedBank]);
+  }, [policies, selectedBank, selectedProduct]);
 
   if (isCollapsed) return null;
 
@@ -145,19 +137,19 @@ export default function HierarchyPane({
         className={`
           fixed inset-y-0 left-0 z-50 bg-white border-r border-slate-200 flex flex-col h-full shadow-xl transition-transform duration-200 select-none text-xs
           md:relative md:inset-auto md:z-auto md:shadow-none md:translate-x-0 md:h-[calc(100vh-3.5rem)]
-          ${isMobileOpen ? 'translate-x-0 !w-72' : '-translate-x-full md:translate-x-0'}
+          ${isMobileOpen ? 'translate-x-0 !w-80' : '-translate-x-full md:translate-x-0'}
         `}
       >
-        {/* Header */}
-        <div className="h-11 px-3 border-b border-slate-200 flex items-center justify-between text-slate-800 bg-slate-50/70">
+        {/* Top Header with Collapse Button */}
+        <div className="h-10 px-3 border-b border-slate-200 flex items-center justify-between text-slate-800 bg-slate-50/70">
           <div className="flex items-center gap-1.5 truncate">
+            <Layers className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-800 truncate">
-              Banking Regulatory Library
+              Banking Regulatory Hub
             </span>
           </div>
 
           <div className="flex items-center gap-1 text-slate-500">
-            {/* Desktop Collapse Button */}
             {onToggleCollapse && (
               <button
                 onClick={onToggleCollapse}
@@ -168,7 +160,6 @@ export default function HierarchyPane({
               </button>
             )}
 
-            {/* Mobile Close Button */}
             <button
               onClick={onCloseMobile}
               className="md:hidden p-1 rounded hover:bg-slate-200 text-slate-600 cursor-pointer"
@@ -178,7 +169,7 @@ export default function HierarchyPane({
           </div>
         </div>
 
-        {/* Sidebar Search Bar + Add Policy Trigger */}
+        {/* Search Bar + Add Policy */}
         <div className="p-2 border-b border-slate-200 bg-slate-50/50 flex items-center gap-1.5">
           <div className="relative flex-1">
             <Search className="w-3 h-3 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
@@ -186,7 +177,7 @@ export default function HierarchyPane({
               type="text"
               value={filterQuery}
               onChange={(e) => setFilterQuery(e.target.value)}
-              placeholder="Filter standards (CPS, PII, AML)..."
+              placeholder="Search standards (CPS, PII, AML)..."
               className="w-full bg-white border border-slate-300 rounded pl-7 pr-6 py-1 text-[11px] text-slate-900 placeholder-slate-400 outline-none focus:border-blue-500 transition"
             />
             {filterQuery && (
@@ -210,7 +201,7 @@ export default function HierarchyPane({
           )}
         </div>
 
-        {/* Active / Inactive Status Filter Pills */}
+        {/* Active / Inactive Filter Tabs */}
         <div className="px-2.5 py-1.5 border-b border-slate-200 bg-slate-50/80 flex items-center gap-1 text-[10.5px]">
           <button
             onClick={() => setStatusFilter('ALL')}
@@ -246,159 +237,232 @@ export default function HierarchyPane({
           </button>
         </div>
 
-        {/* Tree List */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-2.5 space-y-1.5 bg-white">
-          {filteredHierarchy.length === 0 ? (
-            <div className="p-4 text-center text-slate-400 text-[11px] space-y-1">
-              <div>No standards match your filter.</div>
-              {statusFilter !== 'ALL' && (
-                <button 
-                  onClick={() => setStatusFilter('ALL')} 
-                  className="text-blue-600 hover:underline text-[10.5px] cursor-pointer"
+        {/* Hierarchy Tree: 4 Banks ➔ Products (Credit Cards 1st, All at end) ➔ Folders ➔ Policies */}
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-2 space-y-1 bg-white">
+          {banks.map((b) => {
+            const isBankSelected = selectedBank?.id === b.id;
+            const isBankExpanded = filterQuery ? true : Boolean(expandedBanks[b.id]);
+
+            return (
+              <div key={b.id} className="space-y-0.5">
+                {/* Level 1: Bank Node */}
+                <div 
+                  onClick={() => {
+                    toggleBank(b.id);
+                    if (onSelectBank) onSelectBank(b);
+                  }}
+                  className={`flex items-center justify-between px-2 py-1.5 rounded-lg cursor-pointer transition ${
+                    isBankSelected 
+                      ? 'bg-slate-100 text-slate-900 font-bold border border-slate-300 shadow-2xs' 
+                      : 'hover:bg-slate-50 text-slate-700'
+                  }`}
                 >
-                  Show all standards
-                </button>
-              )}
-            </div>
-          ) : (
-            filteredHierarchy.map((domain) => {
-              const isDomainExpanded = filterQuery ? true : (expandedNodes[domain.id] !== false);
-              return (
-                <div key={domain.id} className="space-y-0.5">
-                  {/* Domain Header */}
-                  <div 
-                    onClick={() => toggleNode(domain.id)}
-                    className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-slate-100 cursor-pointer transition text-slate-800"
-                  >
-                    <div className="flex items-center gap-1.5 truncate">
-                      <span className="text-slate-400">
-                        {isDomainExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                      </span>
-                      {getDomainIcon(domain.id)}
-                      <span className="text-[11px] font-bold tracking-tight uppercase text-slate-800 truncate">
-                        {domain.label}
-                      </span>
+                  <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-slate-400">
+                      {isBankExpanded ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
+                    </span>
+                    <div className="w-5 h-5 rounded bg-slate-900 text-white font-bold text-[9.5px] flex items-center justify-center flex-shrink-0">
+                      {b.id.toUpperCase()}
                     </div>
+                    <span className="text-[11.5px] font-bold truncate">
+                      {b.id.toUpperCase()} - Retail Standards
+                    </span>
                   </div>
 
-                  {/* Sub-Folders */}
-                  {isDomainExpanded && domain.children && (
-                    <div className="pl-3 ml-2 border-l border-slate-200 space-y-1">
-                      {domain.children.map((folder) => {
-                        const isFolderExpanded = filterQuery ? true : expandedNodes[folder.id];
-                        return (
-                          <div key={folder.id} className="space-y-0.5">
-                            <div 
-                              onClick={() => toggleNode(folder.id)}
-                              className="flex items-center justify-between px-2 py-1 text-slate-700 hover:bg-slate-100 rounded-md cursor-pointer transition"
-                            >
-                              <div className="flex items-center gap-1.5 truncate">
-                                <span className="text-slate-400">
-                                  {isFolderExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                                </span>
-                                <Folder className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
-                                <span className="text-xs font-semibold text-slate-700 truncate">{folder.label}</span>
-                              </div>
+                  <span className="text-[9.5px] font-mono font-bold bg-white text-slate-600 px-1.5 py-0.2 rounded border border-slate-200 flex-shrink-0">
+                    4 Products
+                  </span>
+                </div>
+
+                {/* Level 2: Product Folders under Bank (Credit Cards 1st, All Retail Standards at end) */}
+                {isBankExpanded && (
+                  <div className="pl-3 ml-2 border-l border-slate-200 space-y-1">
+                    {productNodes.map((prod) => {
+                      const prodKey = `${b.id}-${prod.id}`;
+                      const isProdSelected = isBankSelected && selectedProduct === prod.id;
+                      const isProdExpanded = filterQuery ? true : Boolean(expandedProducts[prodKey]);
+
+                      return (
+                        <div key={prod.id} className="space-y-0.5">
+                          {/* Product Folder Node with Outline Folder Icon */}
+                          <div 
+                            onClick={() => {
+                              toggleProduct(prodKey);
+                              if (onSelectBank) onSelectBank(b);
+                              if (onSelectProduct) onSelectProduct(prod.id);
+                            }}
+                            className={`flex items-center justify-between px-2 py-1 rounded-md cursor-pointer transition ${
+                              isProdSelected 
+                                ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200 shadow-2xs' 
+                                : 'hover:bg-slate-100 text-slate-700'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-slate-400">
+                                {isProdExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                              </span>
+                              <Folder className={`w-3.5 h-3.5 flex-shrink-0 ${isProdSelected ? 'text-blue-600' : 'text-slate-500'}`} />
+                              <span className="text-xs font-semibold truncate">{prod.label}</span>
                             </div>
+                          </div>
 
-                            {/* Leaf Policies */}
-                            {isFolderExpanded && folder.children && (
-                              <div className="pl-3 ml-2 border-l border-slate-200 space-y-0.5">
-                                {folder.children.map((leaf) => {
-                                  const isSelected = selectedItemId === leaf.id;
-                                  
-                                  // Check if active bank has a configured/active addendum for this policy
-                                  const policyObj = policies[leaf.id];
-                                  const addenda = policyObj?.bankCustomAddenda?.[selectedBank?.id];
-                                  const isBankActive = Boolean(addenda && addenda.status !== 'INACTIVE');
+                          {/* Level 3 & 4: Statutory Folders & Policy Leaves */}
+                          {isProdExpanded && (
+                            <div className="pl-3 ml-2 border-l border-slate-200 space-y-1">
+                              {hierarchy.map((domain) => {
+                                const isDomainExpanded = filterQuery ? true : Boolean(expandedFolders[domain.id]);
 
-                                  return (
-                                    <div
-                                      key={leaf.id}
-                                      onClick={() => {
-                                        onSelectItem(leaf.id);
-                                        if (onCloseMobile) onCloseMobile();
-                                      }}
-                                      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition text-xs ${
-                                        isSelected
-                                          ? 'bg-blue-50 text-blue-900 border border-blue-200 font-bold shadow-2xs'
-                                          : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
-                                      }`}
+                                // Filter domain leaves matching product and active status
+                                const matchingGroups = (domain.children || []).map(group => {
+                                  const matchingLeaves = (group.children || []).filter(leaf => {
+                                    const pol = policies[leaf.id];
+                                    
+                                    // Product check
+                                    if (prod.id !== 'all' && pol?.applicableProducts && !pol.applicableProducts.includes(prod.id)) {
+                                      return false;
+                                    }
+
+                                    // Active / Inactive check
+                                    const isBankActive = Boolean(
+                                      pol?.bankCustomAddenda?.[b.id] &&
+                                      pol.bankCustomAddenda[b.id].status !== 'INACTIVE'
+                                    );
+
+                                    if (statusFilter === 'ACTIVE' && !isBankActive) return false;
+                                    if (statusFilter === 'INACTIVE' && isBankActive) return false;
+
+                                    if (!filterQuery) return true;
+                                    const q = filterQuery.toLowerCase().trim();
+                                    return (
+                                      leaf.label.toLowerCase().includes(q) || 
+                                      leaf.id.toLowerCase().includes(q) ||
+                                      (leaf.version && leaf.version.toLowerCase().includes(q))
+                                    );
+                                  });
+
+                                  if (matchingLeaves.length > 0) {
+                                    return { ...group, children: matchingLeaves };
+                                  }
+                                  return null;
+                                }).filter(Boolean);
+
+                                if (matchingGroups.length === 0) return null;
+
+                                return (
+                                  <div key={domain.id} className="space-y-0.5">
+                                    {/* Domain Folder Node */}
+                                    <div 
+                                      onClick={() => toggleFolder(domain.id)}
+                                      className="flex items-center justify-between px-1.5 py-1 rounded hover:bg-slate-100 cursor-pointer transition text-slate-800"
                                     >
                                       <div className="flex items-center gap-1.5 truncate">
-                                        {/* Green Active Indicator Dot vs Grey Inactive Dot */}
-                                        {isBankActive ? (
-                                          <span 
-                                            className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-100 flex-shrink-0" 
-                                            title={`🟢 Active & Enforced for ${selectedBank?.name || 'Bank'}`}
-                                          />
-                                        ) : (
-                                          <span 
-                                            className="w-1.5 h-1.5 rounded-full bg-slate-300 flex-shrink-0" 
-                                            title="⚪ Inactive for this Bank"
-                                          />
-                                        )}
-
-                                        <FileText className={`w-3.5 h-3.5 flex-shrink-0 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
-                                        <span className="truncate">{leaf.label}</span>
-                                      </div>
-
-                                      <div className="flex items-center gap-1">
-                                        {leaf.version && (
-                                          <span className={`text-[10px] font-mono px-1 py-0.2 rounded border ${
-                                            isSelected 
-                                              ? 'bg-blue-100 text-blue-800 border-blue-300' 
-                                              : isBankActive
-                                              ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                                              : 'bg-slate-100 text-slate-500 border-slate-200'
-                                          }`}>
-                                            {leaf.version}
-                                          </span>
-                                        )}
-
-                                        {/* Optional Delete/Remove Policy Trigger */}
-                                        {onDeletePolicy && (
-                                          <button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              if (window.confirm(`Are you sure you want to remove ${leaf.label}?`)) {
-                                                onDeletePolicy(leaf.id);
-                                              }
-                                            }}
-                                            title="Delete specification"
-                                            className="opacity-0 group-hover:opacity-100 p-0.5 text-slate-400 hover:text-rose-600 transition cursor-pointer"
-                                          >
-                                            <Trash2 className="w-3 h-3" />
-                                          </button>
-                                        )}
+                                        <span className="text-slate-400">
+                                          {isDomainExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                        </span>
+                                        {getDomainIcon(domain.id)}
+                                        <span className="text-[10.5px] font-bold uppercase tracking-tight text-slate-800 truncate">
+                                          {domain.label}
+                                        </span>
                                       </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })
-          )}
-        </div>
 
-        {/* Footer info showing active bank status */}
-        <div className="h-9 px-3 bg-slate-50 border-t border-slate-200 text-[10.5px] text-slate-600 flex items-center justify-between">
-          <div className="flex items-center gap-1.5 truncate">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="truncate font-semibold text-slate-700">
-              {selectedBank?.name?.split(' ')[0] || 'Bank'}: {activeCount}/{totalCount} Active
-            </span>
-          </div>
-          <span className="text-[10px] font-mono text-slate-400">
-            {totalCount} Total
-          </span>
+                                    {/* Sub-group folders & leaves */}
+                                    {isDomainExpanded && (
+                                      <div className="pl-3 ml-1.5 border-l border-slate-200 space-y-0.5">
+                                        {matchingGroups.map((group) => {
+                                          const isGroupExpanded = filterQuery ? true : Boolean(expandedFolders[group.id]);
+
+                                          return (
+                                            <div key={group.id} className="space-y-0.5">
+                                              <div 
+                                                onClick={() => toggleFolder(group.id)}
+                                                className="flex items-center justify-between px-1.5 py-0.5 rounded hover:bg-slate-100 cursor-pointer transition text-slate-700"
+                                              >
+                                                <div className="flex items-center gap-1 truncate">
+                                                  <span className="text-slate-400">
+                                                    {isGroupExpanded ? <ChevronDown className="w-2.5 h-2.5" /> : <ChevronRight className="w-2.5 h-2.5" />}
+                                                  </span>
+                                                  <Folder className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                                  <span className="text-[11px] font-medium text-slate-700 truncate">{group.label}</span>
+                                                </div>
+                                              </div>
+
+                                              {/* Policy Leaves with Green Active Dot */}
+                                              {isGroupExpanded && (
+                                                <div className="pl-3 ml-1.5 border-l border-slate-200 space-y-0.5">
+                                                  {group.children.map((leaf) => {
+                                                    const isLeafSelected = selectedItemId === leaf.id && selectedBank?.id === b.id;
+                                                    const policyObj = policies[leaf.id];
+                                                    const addenda = policyObj?.bankCustomAddenda?.[b.id];
+                                                    const isBankActive = Boolean(addenda && addenda.status !== 'INACTIVE');
+
+                                                    return (
+                                                      <div
+                                                        key={leaf.id}
+                                                        onClick={() => {
+                                                          if (onSelectBank) onSelectBank(b);
+                                                          if (onSelectProduct) onSelectProduct(prod.id);
+                                                          onSelectItem(leaf.id);
+                                                          if (onCloseMobile) onCloseMobile();
+                                                        }}
+                                                        className={`group flex items-center justify-between px-2 py-1 rounded cursor-pointer transition text-xs ${
+                                                          isLeafSelected
+                                                            ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                                                            : 'hover:bg-slate-100 text-slate-600 hover:text-slate-900'
+                                                        }`}
+                                                      >
+                                                        <div className="flex items-center gap-1.5 truncate">
+                                                          {/* Green Active Dot vs Grey Inactive Dot */}
+                                                          {isBankActive ? (
+                                                            <span 
+                                                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                                                isLeafSelected ? 'bg-emerald-300 ring-2 ring-emerald-200/50' : 'bg-emerald-500'
+                                                              }`} 
+                                                              title={`🟢 Active for ${b.id.toUpperCase()}`}
+                                                            />
+                                                          ) : (
+                                                            <span 
+                                                              className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                                                                isLeafSelected ? 'bg-slate-300' : 'bg-slate-300'
+                                                              }`} 
+                                                              title="⚪ Inactive"
+                                                            />
+                                                          )}
+
+                                                          <FileText className={`w-3 h-3 flex-shrink-0 ${isLeafSelected ? 'text-white' : 'text-slate-400'}`} />
+                                                          <span className="truncate text-[11px]">{leaf.label}</span>
+                                                        </div>
+
+                                                        {leaf.version && (
+                                                          <span className={`text-[9px] font-mono px-1 rounded ${
+                                                            isLeafSelected ? 'bg-blue-700 text-white' : 'bg-slate-100 text-slate-500'
+                                                          }`}>
+                                                            {leaf.version}
+                                                          </span>
+                                                        )}
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </aside>
     </>
