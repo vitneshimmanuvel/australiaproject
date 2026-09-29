@@ -187,6 +187,13 @@ export const initialBankingHierarchy = [
         ],
       },
       {
+        id: 'aps-220-group',
+        label: 'APS 220: Credit Risk & Lending Rules',
+        children: [
+          { id: 'aps-220-credit-risk', label: 'Responsible Lending & Personal Loan Rules', version: 'v3.4.0' },
+        ],
+      },
+      {
         id: 'cps-230-group',
         label: 'CPS 230: Operational Risk Management',
         children: [
@@ -242,6 +249,100 @@ export const initialBankingHierarchy = [
 
 // Rich, realistic banking specifications for all submenu options
 export const initialPoliciesDatabase = {
+  // 0. APRA APS 220 Responsible Lending & Personal Loan Credit Assessment Rules
+  'aps-220-credit-risk': {
+    id: 'aps-220-credit-risk',
+    title: 'Responsible Lending & Personal Loan Credit Assessment Rules',
+    breadcrumb: 'APRA Prudential Standards / APS 220 Credit Risk & Lending Rules • Active',
+    latestVersion: 'v3.4.0',
+    lastUpdated: 'Sep 25, 2026',
+    ownedBy: 'Retail Credit Risk & Underwriting Squad',
+    complianceLevel: 'APRA APS 220 / National Consumer Credit Protection (NCCP) Act 2009',
+    visionStatement:
+      'Enforce automated responsible lending verification, 3.00% minimum interest rate buffers, and comprehensive credit reporting (CCR) ingestion to eliminate unserviceable debt exposure across retail loan portfolios.',
+    dependencies: [
+      { name: 'Equifax / Experian CCR Gateway', status: 'Healthy' },
+      { name: 'Open Banking CDR Income Categorizer', status: 'Active' },
+      { name: 'Core Decisioning Engine (FICO/Provenir)', status: 'Active' },
+    ],
+    coreFrameworkClauses: [
+      {
+        clauseId: 'APS220-CR-01',
+        title: 'Mandatory 3.00% Serviceability Interest Rate Buffer',
+        content: 'All personal loan and residential mortgage serviceability calculations must incorporate a minimum interest rate assessment buffer of 300 basis points (3.00%) above the active customer loan interest rate.',
+      },
+      {
+        clauseId: 'APS220-CR-02',
+        title: 'Debt-to-Income (DTI) Cap & Unhedged Exposure Limits',
+        content: 'Unsecured personal loan and credit facility approvals resulting in Debt-to-Income (DTI) exceeding 6.0x are restricted to maximum 5% of total retail origination volume, requiring Level-4 Risk Committee escalation.',
+      },
+      {
+        clauseId: 'APS220-CR-03',
+        title: 'Mandatory Comprehensive Credit Reporting (CCR) Ingestion',
+        content: 'Prior to unconditional loan approval, underwriting systems must query real-time positive and negative credit data from accredited bureaus and cross-reference with CDR bank statements.',
+      },
+    ],
+    bankCustomAddenda: {
+      cba: {
+        sessionTimeout: 'Max $50,000 Unsecured Personal Loan Limit',
+        mfaRule: 'Income verification via automated CDR Open Banking stream',
+        customClause: 'CBA Lending Rule: Tiered risk-based pricing with automated 3.5% buffer for non-salaried applicants.',
+        lastModifiedBy: 'David Miller (CBA Principal Security Architect)',
+      },
+      nab: {
+        sessionTimeout: 'Max $50,000 Unsecured Personal Loan Limit',
+        mfaRule: 'Fast-track auto-decisioning for credit score > 750',
+        customClause: 'NAB Lending Addendum: Mandatory living expense benchmark (HEM) cross-validation with 12 months transaction data.',
+        lastModifiedBy: 'Rachel Wong (NAB Compliance)',
+      },
+      wbc: {
+        sessionTimeout: 'Max $60,000 Unsecured Personal Loan Limit',
+        mfaRule: 'Dual risk-manager approval required for DTI > 5.5x',
+        customClause: 'Westpac Lending Clause: Instant hardship relief pre-screening for vulnerable borrower profiles.',
+        lastModifiedBy: 'Anthony Clarke (Westpac Risk)',
+      },
+      anz: {
+        sessionTimeout: 'Max $45,000 Unsecured Personal Loan Limit',
+        mfaRule: 'Passkey digital signature required for loan agreement contract',
+        customClause: 'ANZ Lending Rule: Automated real-time employer payroll API validation for instant disbursement.',
+        lastModifiedBy: 'Elena Rossi (ANZ AppSec)',
+      },
+    },
+    artifacts: [
+      { id: 'art-lending1', type: 'Training', tag: 'Underwriting Guide', location: 'Master Library', title: 'NCCP Responsible Lending Assessment SOP', content: 'Step-by-step checklist for verifying borrower requirements and objectives under ASIC RG 209.' },
+      { id: 'art-lending2', type: 'Minutes', tag: 'Credit Committee', location: 'Master Library', title: 'Q3 APRA APS 220 Credit Risk Stress Test Review', content: 'Portfolio stress-tested against 400bps rate hike scenario with default rate remaining under 0.65%.' },
+    ],
+    metricsTable: [
+      { metric: 'Avg Approval Turnaround Time', target: '< 4 hours', actual: '1.4 hours', status: 'Optimal' },
+      { metric: 'Non-Performing Loan (NPL) Ratio', target: '< 1.0%', actual: '0.48%', status: 'Optimal' },
+      { metric: 'CCR Bureau Ingestion Latency', target: '< 2.0s', actual: '0.85s', status: 'Optimal' },
+    ],
+    applicableProducts: ['personal-loans', 'mortgages', 'all'],
+    comments: [
+      { 
+        id: 'cr-loan-1', 
+        type: 'CHANGE_REQUEST',
+        category: 'Review', 
+        badge: 'Lending Policy Variance', 
+        author: 'David Miller', 
+        authorRole: 'CBA Principal Security Architect (Employee)',
+        avatar: 'DM', 
+        bankId: 'cba',
+        targetProduct: 'Personal Loans',
+        time: '2 hours ago', 
+        title: 'Automated CDR income verification threshold increase for digital personal loans',
+        content: 'Requesting permission to increase automated instant loan decisioning threshold from $30,000 to $50,000 for CBA salary-credited customers with CDR data sharing active.',
+        proposedTimeout: 'Instant Decisioning up to $50,000 AUD',
+        proposedMfaRule: 'Biometric passkey signature + CDR 90-day transaction sync',
+        status: 'PENDING',
+        reviewerName: null,
+        reviewNote: null,
+        reviewedAt: null,
+      },
+      { id: 'c-loan1', author: 'Marcus Vance', avatar: 'MV', time: '5 hours ago', category: 'Notes', badge: 'Credit Policy', content: 'APRA APS 220 300bps buffer verified across all personal loan originations.' },
+    ],
+  },
+
   // 1. OAuth 2.0 & SSO
   'oauth-sso': {
     id: 'oauth-sso',

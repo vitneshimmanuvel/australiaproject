@@ -27,7 +27,7 @@ export default function HierarchyPane({
   banks = defaultBanksList,
   selectedBank,
   onSelectBank,
-  selectedProduct = 'credit-cards',
+  selectedProduct = 'personal-loans',
   onSelectProduct,
   products = defaultBankingProducts,
   selectedItemId, 
@@ -52,13 +52,16 @@ export default function HierarchyPane({
     'anz': false,
   });
 
-  // Initially Credit Cards under CBA is open, other products collapsed
+  // Initially Personal Loans under CBA is open
   const [expandedProducts, setExpandedProducts] = useState({
-    'cba-credit-cards': true,
+    'cba-personal-loans': true,
   });
 
-  // Statutory folders start collapsed so user can manually expand what they need
-  const [expandedFolders, setExpandedFolders] = useState({});
+  // Expand APRA Prudential Standards and APS 220 folder initially so user immediately sees Loan Rules
+  const [expandedFolders, setExpandedFolders] = useState({
+    'prudential-standards': true,
+    'aps-220-group': true,
+  });
 
   const toggleBank = (bankId) => {
     setExpandedBanks(prev => ({

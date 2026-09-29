@@ -128,6 +128,24 @@ export default function PolicyWorkspacePane({
       };
     }
 
+    if (breadcrumb.includes('aps 220') || id.includes('lending') || id.includes('credit-risk')) {
+      return {
+        title: 'Retail Lending Risk & Serviceability Telemetry',
+        subtitle: 'CCR Bureau Ingestion (s) vs Automated Decisioning Volume (Loans/hr)',
+        line1Name: 'Bureau Latency (s)',
+        line2Name: 'Decisioning Vol',
+        points: [
+          { time: '00:00', val1: '0.6s', val2: '45 loans/h', x: 0, y1: 95, y2: 80 },
+          { time: '06:00', val1: '0.8s', val2: '120 loans/h', x: 100, y1: 85, y2: 55 },
+          { time: '12:00', val1: '1.1s', val2: '480 loans/h', x: 200, y1: 72, y2: 25 },
+          { time: '18:00', val1: '0.9s', val2: '320 loans/h', x: 300, y1: 80, y2: 40 },
+          { time: '21:00', val1: '0.7s', val2: '95 loans/h', x: 400, y1: 90, y2: 70 },
+        ],
+        pathD: "M 0 95 Q 50 85, 100 85 T 200 72 T 300 80 T 400 90",
+        pathD2: "M 0 80 Q 50 55, 100 55 T 200 25 T 300 40 T 400 70",
+      };
+    }
+
     // Default APRA CPS 234 / Authentication Security
     return {
       title: 'APRA CPS 234 Cryptographic Verification Telemetry',

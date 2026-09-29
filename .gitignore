@@ -7,12 +7,25 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+
+# Production Build Output
 dist
 dist-ssr
+
+# Local Environment Variables (Never commit secrets to Git)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 *.local
 
-# Editor directories and files
+# Vercel deployment artifacts
+.vercel
+
+# Editor directories and system files
 .vscode/*
 !.vscode/extensions.json
 .idea

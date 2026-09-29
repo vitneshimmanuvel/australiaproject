@@ -28,8 +28,8 @@ export default function App() {
   // Data states
   const [banks, setBanks] = useState(banksList);
   const [selectedBank, setSelectedBank] = useState(banksList[0]); // Commonwealth Bank by default
-  const [selectedProduct, setSelectedProduct] = useState('credit-cards'); // 'credit-cards' default | 'personal-loans' | 'mortgages' | 'deposits' | 'all'
-  const [selectedPolicyId, setSelectedPolicyId] = useState('oauth-sso');
+  const [selectedProduct, setSelectedProduct] = useState('personal-loans'); // 'personal-loans' default as requested
+  const [selectedPolicyId, setSelectedPolicyId] = useState('aps-220-credit-risk');
   const [policies, setPolicies] = useState(policiesDatabase);
   const [hierarchy, setHierarchy] = useState(bankingHierarchy);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +56,7 @@ export default function App() {
   const [isEditMasterModalOpen, setIsEditMasterModalOpen] = useState(false);
   const [isAddPolicyModalOpen, setIsAddPolicyModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [targetMasterPolicyId, setTargetMasterPolicyId] = useState('oauth-sso');
+  const [targetMasterPolicyId, setTargetMasterPolicyId] = useState('aps-220-credit-risk');
 
   // Mouse drag handler for resizable sidebars
   useEffect(() => {
@@ -125,8 +125,8 @@ export default function App() {
     setCurrentUser(targetUser);
   };
 
-  // Active policy
-  const activePolicy = policies[selectedPolicyId] || policies['oauth-sso'] || Object.values(policies)[0];
+  // Active policy: Defaults to Responsible Lending & Personal Loan Rules (APS 220)
+  const activePolicy = policies[selectedPolicyId] || policies['aps-220-credit-risk'] || Object.values(policies)[0];
 
   // Handle saving bank-specific addenda
   const handleSaveBankCustomization = (policyId, bankId, customData) => {
@@ -568,7 +568,7 @@ export default function App() {
           </button>
         )}
 
-        {/* Pane 3: Contextual Review Feed (Change Requests + Accept/Reject Sign-Off + Notes + Minutes) */}
+        {/* Pane 3: Contextual Review Feed (Shidney AI + Change Requests + Accept/Reject Sign-Off + Notes + Minutes) */}
         <ContextualFeedPane
           comments={activePolicy?.comments || []}
           onAddComment={handleAddComment}
@@ -576,6 +576,18 @@ export default function App() {
           onRejectRequest={handleRejectRequest}
           currentUser={currentUser}
           onQuickToggleUserRole={handleQuickToggleUserRole}
+          activePolicy={activePolicy}
+          selectedBank={selectedBank}
+          selectedProduct={selectedProduct}
+          policies={policies}
+          onSelectPolicy={(id) => {
+            if (policies[id]) {
+              setSelectedPolicyId(id);
+            }
+          }}
+          onSelectProduct={setSelectedProduct}
+          onOpenEditModal={() => setIsEditBankModalOpen(true)}
+          onOpenExportModal={() => setIsExportModalOpen(true)}
           activePolicyTitle={activePolicy?.title}
           isMobileOpen={isMobileRightOpen}
           onCloseMobile={() => setIsMobileRightOpen(false)}
