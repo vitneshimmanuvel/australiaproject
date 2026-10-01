@@ -95,9 +95,9 @@ export default function ExportModal({
             <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 flex items-start gap-2.5">
               <Unlock className="w-4 h-4 text-blue-700 flex-shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-blue-950 text-xs">Institution Policy Addenda ({selectedBank.name})</span>
+                <span className="font-bold text-blue-950 text-xs">Institution Policy Rules ({selectedBank.name})</span>
                 <p className="text-xs text-blue-900 mt-0.5">
-                  Customized institutional timeouts and step-up rules verified against statutory frameworks.
+                  Customized institutional parameters and risk verification triggers verified against statutory frameworks.
                 </p>
               </div>
             </div>

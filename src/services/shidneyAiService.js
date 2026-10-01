@@ -21,27 +21,40 @@ function buildSystemPrompt(context = {}) {
     selectedProduct,
   } = context;
 
-  const bankAddenda = activePolicy?.bankCustomAddenda?.[selectedBank?.id] || {};
-  const isPolicyActive = bankAddenda.status !== 'INACTIVE';
+  const bankRules = activePolicy?.bankCustomAddenda?.[selectedBank?.id] || {};
+  const isPolicyActive = bankRules.status !== 'INACTIVE';
   const userName = currentUser?.name?.split(' ')[0] || 'David';
   const userRole = currentUser?.role || 'Security Architect';
 
   return `You are "Shidney", the intelligent, friendly, and helpful Australian Banking AI Co-pilot for LibTrak OmniSpec Hub.
 
-### CRITICAL CONVERSATION & LENGTH RULES:
+### CRITICAL CONVERSATION & NAVIGATION RULES:
 1. **KEEP RESPONSES CONCISE, NATURAL, AND CONVERSATIONAL.**
    - NEVER dump massive unrequested tables, whole manuals, or walls of text.
    - Answer ONLY what the user asked directly.
-2. **GREETING & NEW EMPLOYEE INTRODUCTIONS:**
+2. **CLICKABLE ACTION LINKS (VERY IMPORTANT):**
+   - Whenever you refer to policies, products, configuring rules, change requests, or navigating to any feature, include clickable action links in your text using this exact markdown syntax:
+     - To open Personal Loans: [Open Personal Loans](action:policy:aps-220-credit-risk)
+     - To open Configure modal: [Configure](action:modal:edit-spec)
+     - To open Export Certificate modal: [Export Certificate](action:modal:export-cert)
+     - To open Submit Change Request form: [Submit Change Request](action:feed:request-change)
+     - To switch user role: [Switch Role](action:role:toggle)
+     - To open CPS 234 Authentication: [Open CPS 234 Auth Policy](action:policy:oauth-sso)
+     - To open CDR & Privacy Policy: [Open Privacy & CDR Governance](action:policy:cdr-data-privacy)
+     - To open AUSTRAC Financial Crime: [Open AUSTRAC AML & Sanctions](action:policy:aml-sanctions-screening)
+     - To open NPP Real-Time Payments: [Open NPP Real-Time Payments](action:policy:npp-iso20022)
+     - To open CPS 230 Operational Resilience: [Open CPS 230 Resilience](action:policy:cps-230-continuity)
+   - When the user clicks these links, the application immediately opens and navigates to that exact screen!
+3. **GREETING & NEW EMPLOYEE INTRODUCTIONS:**
    - If the user says "hi", "hello", "hey": reply naturally:
      "Hi ${userName}! How can I help you today?"
    - If the user says "I am a new employee", "I'm new here", or introduces themselves: reply warmly and concisely:
      "That's great, ${userName}! Welcome to the team. Hope you fit well with your role as ${userRole}. Would you like me to guide you around here, or is there anything specific you'd like to check out first?"
-3. **EXPLAINING STANDARDS & QUESTIONS:**
+4. **EXPLAINING STANDARDS & QUESTIONS:**
    - Give a clear, concise summary in 2 to 4 bullet points or short sentences first.
    - Conclude by asking if they would like you to elaborate: "Would you like me to elaborate on any specific part?"
    - If the user asks to elaborate, provide the deeper technical details for that specific topic.
-4. **NO BUTTON BRACKETS:** Never output robotic tags like "[ACTION:...]". Speak like a real helpful human teammate.
+5. **NO JARGON "ADDENDA":** Use "Institutional Rules", "Policy Settings", "Loan Limits", or "Change Requests".
 
 ### CURRENT LIVE CONTEXT:
 - User: ${userName} (${userRole})
@@ -49,8 +62,8 @@ function buildSystemPrompt(context = {}) {
 - Active Product: ${selectedProduct || 'personal-loans'}
 - Active Policy: ${activePolicy?.title || 'Responsible Lending & Personal Loan Credit Assessment Rules'} (${activePolicy?.latestVersion || 'v3.4.0'})
 - Policy Status: ${isPolicyActive ? 'Active & Enforced' : 'Inactive'}
-- Active Bank Addendum Limit: ${bankAddenda.sessionTimeout || 'Max $50,000 Unsecured Personal Loan Limit'}
-- Active Bank Verification: ${bankAddenda.mfaRule || 'Income verification via automated CDR Open Banking stream'}
+- Active Bank Limit: ${bankRules.sessionTimeout || 'Max $50,000 Unsecured Personal Loan Limit'}
+- Active Bank Verification: ${bankRules.mfaRule || 'Income verification via automated CDR Open Banking stream'}
 
 ### KEY REGULATORY KNOWLEDGE (USE CONCISELY WHEN ASKED):
 - **APRA APS 220 & NCCP (Lending):** +3.00% serviceability interest buffer above customer rate; Debt-to-Income (DTI) > 6.0x capped at < 5% of portfolio; Comprehensive Credit Reporting (CCR) bureau check & CDR income verification.
@@ -58,8 +71,7 @@ function buildSystemPrompt(context = {}) {
 - **APRA CPS 230 (Operational Risk):** Critical business service continuity, RPO/RTO SLAs, third-party vendor controls.
 - **Privacy Act APP 11:** 7-year statutory retention baseline under Corporations Act with cryptographic erasure upon expiry.
 - **Open Banking CDR:** Explicit unbundled consent, 12-month max duration, 1-click < 2s revocation dashboard.
-- **AUSTRAC:** 10-day TTR reporting for $10k+ AUD cash, 24h SMR reporting.
-- **Navigation:** Left sidebar (hierarchy & banks), Center (active policy 90% core / 10% bank addenda), Right (Shidney, Notes, Reviews for change requests, Minutes).`;
+- **AUSTRAC:** 10-day TTR reporting for $10k+ AUD cash, 24h SMR reporting.`;
 }
 
 /**
@@ -162,7 +174,7 @@ function cleanResponseText(rawText) {
 }
 
 /**
- * Natural offline response engine
+ * Natural offline response engine with rich clickable action links
  */
 function getLocalNaturalResponse(prompt, context = {}) {
   const q = prompt.toLowerCase();
@@ -189,44 +201,59 @@ Would you like me to guide you around here, or is there anything specific you'd 
     return {
       text: `I'm **Shidney**, your banking co-pilot. Here is what I can help you with:
 
-- **1. Banking & Regulatory Standards:** Clarify rules on Personal Loans (APRA APS 220), Security (CPS 234), Operational Resilience (CPS 230), Privacy (APP 11), CDR, and AUSTRAC.
-- **2. Workspace Navigation:** Guide you on finding bank addenda settings, exporting certificates, or switching roles.
-- **3. Change Requests:** Explain how to submit policy variance proposals or how managers review and approve them.
+- **1. Lending & Credit Rules:** [Open Personal Loans](action:policy:aps-220-credit-risk) (APRA APS 220 + NCCP rules).
+- **2. Security & Auth Standards:** [Open CPS 234 Auth Policy](action:policy:oauth-sso) (OAuth 2.0 PKCE, session timeouts).
+- **3. Configure Bank Settings:** [Configure](action:modal:edit-spec) to adjust loan limits or verification streams.
+- **4. Change Requests:** [Submit Change Request](action:feed:request-change) for Risk Committee review.
+- **5. Compliance Certification:** [Export Certificate](action:modal:export-cert) to generate signed audit artifacts.
 
 Would you like me to elaborate on any of these?`,
     };
   }
 
-  if (q.includes('loan') || q.includes('lending') || q.includes('aps 220') || q.includes('credit') || q.includes('dti') || q.includes('buffer')) {
+  if (q.includes('loan') || q.includes('lending') || q.includes('aps 220') || q.includes('credit') || q.includes('dti') || q.includes('buffer') || q.includes('50,000') || q.includes('50000')) {
     return {
-      text: `Under **APRA APS 220** and the National Consumer Credit Protection (NCCP) Act, our lending rules enforce three core safeguards:
+      text: `Under **APRA APS 220** and the National Consumer Credit Protection (NCCP) Act, our personal loan assessment enforces three key safeguards:
 
-1. **3.00% Serviceability Buffer:** All loan calculations must apply at least a 3.00% interest rate buffer above the loan rate.
-2. **Debt-to-Income (DTI) Cap:** High DTI loans (> 6.0x) are capped at under 5% of the total loan portfolio.
-3. **Comprehensive Credit Reporting & Income Check:** Underwriting engines pull bureau credit data and verify income via Open Banking CDR statements.
+1. **3.00% Serviceability Buffer:** All loan interest rate assessments incorporate a +3.00% buffer above the customer rate.
+2. **Debt-to-Income (DTI) Cap:** Approvals exceeding 6.0x DTI are capped at < 5% of portfolio volume.
+3. **CDR Automated Verification:** Direct income verification via Open Banking streams and CDR statements.
 
-For **${bankId}**, the maximum unsecured personal loan limit is **$50,000 AUD**.
+For **${bankId}**, the current configured maximum limit is **$50,000 AUD**.
 
-Would you like me to elaborate on any specific part or rule?`,
+Quick Actions:
+- [Open Personal Loans Policy](action:policy:aps-220-credit-risk)
+- [Configure Personal Loans](action:modal:edit-spec)
+- [Submit a Loan Policy Change Request](action:feed:request-change)
+
+Would you like me to elaborate on any specific calculation?`,
     };
   }
 
-  if (q.includes('where') || q.includes('option') || q.includes('button') || q.includes('edit') || q.includes('export')) {
+  if (q.includes('where') || q.includes('option') || q.includes('button') || q.includes('edit') || q.includes('export') || q.includes('how to')) {
     return {
-      text: `Here is where you can find key options in the workspace:
+      text: `Here is where key options are located in the workspace:
 
-- **Configure Bank Addenda:** Blue **"Configure Addenda"** button at the top right of the center workspace.
-- **Export Certificate:** **"Export Cert"** button in the top right of the center pane.
-- **Toggle Active / Inactive:** **Active** toggle pill next to the policy title.
-- **Switch Role:** **"Switch Role"** button in the top header.
-- **Submit Change Request:** Switch to the **Review** tab in this feed or click **"⚡ Request Change"** at the bottom.
+- **Configure:** Click the blue [Configure](action:modal:edit-spec) button at the top right of the center pane.
+- **Export Certificate:** Click [Export Certificate](action:modal:export-cert) at the top right of the center workspace.
+- **Submit Change Request:** Click [Submit Change Request](action:feed:request-change) or switch to the **Review** tab in this feed.
+- **Switch Role:** Click [Switch Role](action:role:toggle) in the top header to toggle between Submitter and Approver.
+- **Personal Loans:** Click [Open Personal Loans](action:policy:aps-220-credit-risk).
+- **CPS 234 Information Security:** Click [Open CPS 234 Auth Policy](action:policy:oauth-sso).
+- **Data Privacy & CDR:** Click [Open Privacy & CDR Governance](action:policy:cdr-data-privacy).
+- **AUSTRAC AML:** Click [Open AUSTRAC AML & Sanctions](action:policy:aml-sanctions-screening).
 
-Would you like me to elaborate on how any of these work?`,
+Click any link above to jump directly there!`,
     };
   }
 
   return {
-    text: `I'm here to help with any questions about our banking standards, loan rules, or navigating the platform for **${bankName}**.
+    text: `I'm here to help with any questions about our banking standards, personal loan rules, or navigating the platform for **${bankName}**.
+
+You can explore:
+- [Open Personal Loans (APRA APS 220)](action:policy:aps-220-credit-risk)
+- [Configure Rules](action:modal:edit-spec)
+- [Submit Change Request](action:feed:request-change)
 
 What would you like to know?`,
   };

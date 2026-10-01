@@ -164,19 +164,61 @@ export default function PolicyWorkspacePane({
     };
   };
 
+  const isLending = policy.id?.includes('aps-220') || policy.id?.includes('credit') || policy.id?.includes('lending');
+  const isAuth = policy.id?.includes('oauth') || policy.id?.includes('mfa') || policy.id?.includes('privileged-access');
+  const isPrivacy = policy.id?.includes('privacy') || policy.id?.includes('cdr');
+  const isAml = policy.id?.includes('aml') || policy.id?.includes('sanctions');
+
+  const getWorkspaceCardLabels = () => {
+    if (isLending) {
+      return {
+        label1: 'CONFIGURED LOAN LIMIT',
+        label2: 'INCOME & SERVICEABILITY VERIFICATION STREAM',
+        label3: 'INSTITUTION LENDING POLICY CLAUSE',
+      };
+    }
+    if (isAuth) {
+      return {
+        label1: 'CONFIGURED OPERATIONAL TIMEOUT',
+        label2: 'STEP-UP / RISK THRESHOLD TRIGGER',
+        label3: 'INSTITUTION SECURITY CLAUSE',
+      };
+    }
+    if (isPrivacy) {
+      return {
+        label1: 'STATUTORY RETENTION & PURGE SCHEDULE',
+        label2: 'DATA ACCESS & EXPORT CLEARANCE LEVEL',
+        label3: 'INSTITUTION PRIVACY CLAUSE',
+      };
+    }
+    if (isAml) {
+      return {
+        label1: 'AUSTRAC BATCH TRANSMISSION FREQUENCY',
+        label2: 'SANCTIONS CLEARANCE & OVERRIDE AUTHORIZATION',
+        label3: 'INSTITUTION AML CLAUSE',
+      };
+    }
+    return {
+      label1: 'CONFIGURED OPERATIONAL PARAMETER',
+      label2: 'RISK THRESHOLD / VERIFICATION TRIGGER',
+      label3: 'INSTITUTIONAL POLICY CLAUSE',
+    };
+  };
+
+  const cardLabels = getWorkspaceCardLabels();
   const telemetry = getTelemetryConfig();
 
   return (
-    <main className="flex-1 min-w-0 overflow-y-auto custom-scrollbar bg-[#f8fafc] text-slate-900 p-5 sm:p-7 space-y-6">
+    <main className="flex-1 min-w-0 overflow-y-auto custom-scrollbar bg-[#dcecfe] text-slate-900 p-5 sm:p-7 space-y-6">
       {/* 1. Header: Clean Title & Action Buttons + Active / Inactive Status Switcher */}
-      <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-semibold text-slate-500">{policy.breadcrumb}</span>
-            <span className="text-[10.5px] font-mono font-bold bg-blue-50 text-blue-800 px-2 py-0.2 rounded border border-blue-200">
+            <span className="text-[11px] font-semibold text-slate-700">{policy.breadcrumb}</span>
+            <span className="text-[10.5px] font-mono font-bold bg-slate-100 text-slate-900 px-2 py-0.5 rounded border border-slate-300">
               {policy.latestVersion}
             </span>
-            <span className="text-[10.5px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.2 rounded border border-emerald-200">
+            <span className="text-[10.5px] font-bold bg-slate-100 text-slate-900 px-2 py-0.5 rounded border border-slate-300">
               {policy.complianceLevel}
             </span>
           </div>
@@ -185,10 +227,10 @@ export default function PolicyWorkspacePane({
             {policy.title}
           </h1>
 
-          <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-            <span>Owner: <strong className="text-slate-700 font-semibold">{policy.ownedBy}</strong></span>
+          <div className="flex items-center gap-3 text-xs text-slate-600 mt-1">
+            <span>Owner: <strong className="text-slate-900 font-bold">{policy.ownedBy}</strong></span>
             <span>•</span>
-            <span>Last Updated: <strong className="text-slate-700 font-semibold">{policy.lastUpdated}</strong></span>
+            <span>Last Updated: <strong className="text-slate-900 font-bold">{policy.lastUpdated}</strong></span>
           </div>
         </div>
 
@@ -200,19 +242,16 @@ export default function PolicyWorkspacePane({
               onClick={() => onTogglePolicyActive(policy.id, selectedBank.id)}
               className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition cursor-pointer border shadow-2xs ${
                 isPolicyActive
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-rose-50 hover:text-rose-800 hover:border-rose-300 group'
-                  : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-emerald-600 hover:text-white hover:border-emerald-600'
+                  ? 'bg-slate-100 text-slate-900 border-slate-300 hover:bg-slate-200'
+                  : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-900 hover:text-white'
               }`}
               title={isPolicyActive ? "Click to set this policy to Inactive for this bank" : "Click to Activate this policy for this bank"}
             >
-              <Power className="w-3.5 h-3.5" />
+              <Power className="w-3.5 h-3.5 text-slate-700" />
               {isPolicyActive ? (
-                <span>
-                  <span className="group-hover:hidden">🟢 Active</span>
-                  <span className="hidden group-hover:inline">Set Inactive</span>
-                </span>
+                <span>🟢 Active</span>
               ) : (
-                <span>⚡ Activate Policy</span>
+                <span>⚡ Activate</span>
               )}
             </button>
           )}
@@ -222,42 +261,42 @@ export default function PolicyWorkspacePane({
             className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
           >
             <FileEdit className="w-3.5 h-3.5" />
-            <span>Configure Addenda</span>
+            <span>Configure</span>
           </button>
 
           <button
             onClick={onOpenExportModal}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-800 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold shadow-2xs transition cursor-pointer"
+            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
           >
-            <Share2 className="w-3.5 h-3.5 text-slate-600" />
+            <Share2 className="w-3.5 h-3.5 text-slate-700" />
             <span>Export Cert</span>
           </button>
         </div>
       </div>
 
       {/* 2. Executive Summary / Basic Understanding Callout */}
-      <div className="bg-blue-50/60 border border-blue-200/80 rounded-xl p-4 flex gap-3 items-start">
-        <Lightbulb className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+      <div className="bg-white border border-slate-200/90 rounded-xl p-4 flex gap-3 items-start shadow-sm">
+        <Lightbulb className="w-4 h-4 text-slate-800 flex-shrink-0 mt-0.5" />
         <div className="space-y-1">
-          <div className="text-[10.5px] font-bold uppercase tracking-wider text-blue-900">
+          <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-900">
             REGULATORY INTENT & PURPOSE (PLAIN ENGLISH)
           </div>
-          <p className="text-xs text-slate-800 leading-relaxed">
+          <p className="text-xs text-slate-900 leading-relaxed font-medium">
             "{policy.visionStatement}"
           </p>
         </div>
       </div>
 
-      {/* 3. Core Comparison: Master Government Baseline vs Bank Operational Addenda */}
+      {/* 3. Core Comparison: Master Statutory Framework vs Bank Institutional Rules */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 text-xs">
         {/* Left Card: Master Standard (Locked) */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs">
+        <div className="bg-white border border-slate-200/90 rounded-xl p-4 space-y-3 shadow-sm">
           <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
             <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-              <Lock className="w-3.5 h-3.5 text-emerald-700" />
+              <Lock className="w-3.5 h-3.5 text-slate-800" />
               <span>Master Statutory Framework (Locked)</span>
             </div>
-            <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+            <span className="text-[10px] font-bold bg-slate-100 text-slate-900 px-2 py-0.5 rounded border border-slate-300">
               Mandatory APRA Standard
             </span>
           </div>
@@ -268,7 +307,7 @@ export default function PolicyWorkspacePane({
                 <div className="font-bold text-slate-900 text-xs">
                   {c.clauseId}: {c.title}
                 </div>
-                <p className="text-slate-600 text-[11.5px] leading-relaxed">
+                <p className="text-slate-800 text-[11.5px] leading-relaxed">
                   {c.content}
                 </p>
               </div>
@@ -276,67 +315,67 @@ export default function PolicyWorkspacePane({
           </div>
         </div>
 
-        {/* Right Card: Bank Operational Addenda */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3 shadow-2xs flex flex-col justify-between">
+        {/* Right Card: Bank Institutional Rules */}
+        <div className="bg-white border border-slate-200/90 rounded-xl p-4 space-y-3 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between border-b border-slate-200 pb-2.5">
               <div className="flex items-center gap-1.5 font-bold text-slate-900 text-xs">
-                <Unlock className="w-3.5 h-3.5 text-blue-600" />
-                <span>{selectedBank.name} Operational Addenda</span>
+                <Unlock className="w-3.5 h-3.5 text-slate-800" />
+                <span>{selectedBank.name} Institutional Policy</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${
                   isPolicyActive 
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200' 
+                    ? 'bg-slate-100 text-slate-900 border-slate-300' 
                     : 'bg-slate-100 text-slate-500 border-slate-200'
                 }`}>
                   {isPolicyActive ? '🟢 Active' : '⚪ Inactive'}
                 </span>
                 <button
                   onClick={onOpenEditModal}
-                  className="text-[11px] font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                  className="text-[11px] font-bold text-slate-900 hover:text-blue-700 hover:underline cursor-pointer"
                 >
-                  Edit Rule
+                  Configure
                 </button>
               </div>
             </div>
 
             {isPolicyActive ? (
               <div className="space-y-2.5 mt-3">
-                <div className="bg-blue-50/40 p-2.5 rounded-lg border border-blue-100">
-                  <div className="text-[10px] uppercase font-bold text-blue-900">Configured Operational Timeout</div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <div className="text-[10px] uppercase font-bold text-slate-900">{cardLabels.label1}</div>
                   <div className="font-mono text-slate-900 font-bold text-xs mt-0.5">
-                    {bankAddenda.sessionTimeout || '15 Minutes Inactivity / 8h Absolute'}
+                    {bankAddenda.sessionTimeout || (isLending ? 'Max $50,000 Unsecured Personal Loan Limit' : '15 Minutes Inactivity / 8h Absolute')}
                   </div>
                 </div>
 
-                <div className="bg-blue-50/40 p-2.5 rounded-lg border border-blue-100">
-                  <div className="text-[10px] uppercase font-bold text-blue-900">Step-Up / Risk Threshold Trigger</div>
-                  <div className="text-slate-800 font-medium text-xs mt-0.5">
-                    {bankAddenda.mfaRule || 'Transfers > $5,000 AUD or Novel IP Geolocation'}
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <div className="text-[10px] uppercase font-bold text-slate-900">{cardLabels.label2}</div>
+                  <div className="text-slate-900 font-semibold text-xs mt-0.5">
+                    {bankAddenda.mfaRule || (isLending ? 'Income verification via automated CDR Open Banking stream' : 'Transfers > $5,000 AUD or Novel IP Geolocation')}
                   </div>
                 </div>
 
-                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
-                  <div className="text-[10px] uppercase font-bold text-slate-600">Institution Addendum Clause</div>
-                  <p className="text-slate-700 text-xs mt-0.5 italic">
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200 shadow-2xs">
+                  <div className="text-[10px] uppercase font-bold text-slate-900">{cardLabels.label3}</div>
+                  <p className="text-slate-900 text-xs mt-0.5 italic font-medium">
                     "{bankAddenda.customClause || 'Institutional operational rules active.'}"
                   </p>
                 </div>
               </div>
             ) : (
               <div className="p-4 my-3 bg-slate-50 border border-dashed border-slate-300 rounded-lg text-center space-y-2">
-                <ShieldAlert className="w-5 h-5 text-slate-400 mx-auto" />
-                <div className="font-bold text-slate-700 text-xs">
+                <ShieldAlert className="w-5 h-5 text-slate-600 mx-auto" />
+                <div className="font-bold text-slate-900 text-xs">
                   This policy is currently Inactive for {selectedBank.name}
                 </div>
-                <p className="text-[11.5px] text-slate-500">
-                  Default baseline rules apply. Activate this policy to enforce custom institutional timeout and risk conditions.
+                <p className="text-[11.5px] text-slate-700">
+                  Default baseline rules apply. Activate this policy to enforce custom institutional parameters and risk conditions.
                 </p>
                 {onTogglePolicyActive && (
                   <button
                     onClick={() => onTogglePolicyActive(policy.id, selectedBank.id)}
-                    className="inline-flex items-center gap-1 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition shadow-2xs"
+                    className="inline-flex items-center gap-1 bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer transition shadow-2xs"
                   >
                     <span>⚡ Activate for {selectedBank.name}</span>
                   </button>
@@ -345,8 +384,8 @@ export default function PolicyWorkspacePane({
             )}
           </div>
 
-          <div className="pt-2 text-[10.5px] text-slate-400 font-medium text-right">
-            Modified by: {bankAddenda.lastModifiedBy || 'Authorized Officer'}
+          <div className="pt-2 text-[10.5px] text-slate-500 font-medium text-right">
+            Modified by: <strong className="text-slate-800">{bankAddenda.lastModifiedBy || 'Authorized Officer'}</strong>
           </div>
         </div>
       </div>

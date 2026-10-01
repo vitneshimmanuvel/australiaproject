@@ -452,13 +452,21 @@ export default function App() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#f8fafc] text-slate-900 font-sans">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#dcecfe] text-slate-900 font-sans">
       {/* Top Application Bar */}
       <Header
         currentUser={currentUser}
         onOpenRoleModal={() => setIsRoleModalOpen(true)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        policies={policies}
+        selectedPolicyId={selectedPolicyId}
+        onSelectPolicy={(id) => {
+          if (policies[id]) {
+            setSelectedPolicyId(id);
+          }
+        }}
+        onSelectProduct={setSelectedProduct}
         onToggleMobileLeft={() => setIsMobileLeftOpen(!isMobileLeftOpen)}
         onToggleMobileRight={() => setIsMobileRightOpen(!isMobileRightOpen)}
         isLeftOpen={isLeftOpen}
@@ -605,13 +613,15 @@ export default function App() {
         onSelectUser={handleSelectUser}
       />
 
-      {/* Bank Custom Addenda Editor Modal */}
+      {/* Institutional Policy Rule Configuration Modal */}
       <EditSpecModal
         isOpen={isEditBankModalOpen}
         onClose={() => setIsEditBankModalOpen(false)}
         policy={activePolicy}
         selectedBank={selectedBank}
         onSaveCustomization={handleSaveBankCustomization}
+        onAddComment={handleAddComment}
+        currentUser={currentUser}
       />
 
       {/* Staff Admin: Master Core Framework Editor */}

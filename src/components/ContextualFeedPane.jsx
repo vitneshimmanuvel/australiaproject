@@ -167,19 +167,17 @@ export default function ContextualFeedPane({
         </div>
 
         {/* Persona Indicator & Quick Switcher Pill */}
-        <div className="px-3 py-2 border-b border-slate-200 bg-blue-50/40 flex items-center justify-between gap-2">
+        <div className="px-3 py-2 border-b border-slate-200 bg-slate-50 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 truncate">
             <div className={`w-6 h-6 rounded-full flex items-center justify-center text-[10.5px] font-bold text-white flex-shrink-0 ${
-              isManager ? 'bg-amber-700' : 'bg-blue-700'
+              isManager ? 'bg-slate-800' : 'bg-slate-700'
             }`}>
               {currentUser?.avatar || 'DM'}
             </div>
             <div className="truncate">
               <div className="font-bold text-slate-900 text-xs truncate flex items-center gap-1.5">
                 <span>{currentUser?.name || 'David Miller'}</span>
-                <span className={`text-[9.5px] px-1.5 py-0.2 rounded font-bold ${
-                  isManager ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-blue-100 text-blue-900 border border-blue-200'
-                }`}>
+                <span className="text-[9.5px] px-1.5 py-0.2 rounded font-bold bg-slate-100 text-slate-900 border border-slate-300">
                   {isManager ? 'Manager Approver' : 'Employee Submitter'}
                 </span>
               </div>
