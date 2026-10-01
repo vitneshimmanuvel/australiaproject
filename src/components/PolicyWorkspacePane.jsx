@@ -1,10 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   FileEdit, 
   Share2, 
   Lightbulb, 
   TrendingUp, 
   CheckCircle2,
+  XCircle,
+  HelpCircle,
+  SendHorizontal,
+  ChevronDown,
+  Check,
   Lock,
   Unlock,
   ShieldCheck,
@@ -23,11 +28,85 @@ export default function PolicyWorkspacePane({
   selectedBank, 
   onOpenEditModal, 
   onOpenExportModal,
-  onTogglePolicyActive
+  onTogglePolicyActive,
+  currentUser,
+  onAddComment,
+  onAcceptRequest,
+  onRejectRequest,
 }) {
   const [activeTab, setActiveTab] = useState('ALL');
   const [timeRange, setTimeRange] = useState('24h');
   const [hoveredPoint, setHoveredPoint] = useState(null);
+  const [isReviewMenuOpen, setIsReviewMenuOpen] = useState(false);
+  const [selectedDecision, setSelectedDecision] = useState('Approve');
+  const reviewMenuRef = useRef(null);
+
+  // Close review dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (reviewMenuRef.current && !reviewMenuRef.current.contains(e.target)) {
+        setIsReviewMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleReviewAction = (actionType) => {
+    setIsReviewMenuOpen(false);
+    const pendingRequest = (policy?.comments || []).find(c => (c.type === 'CHANGE_REQUEST' || Boolean(c.proposedTimeout)) && c.status === 'PENDING');
+
+    if (actionType === 'APPROVE') {
+      setSelectedDecision('Approve');
+      if (pendingRequest && onAcceptRequest) {
+        onAcceptRequest(pendingRequest.id, `Approved by ${currentUser?.name || 'Risk Manager'} via workspace pane.`, pendingRequest);
+      } else if (onAddComment) {
+        onAddComment({
+          id: `c-appr-${Date.now()}`,
+          type: 'COMMENT',
+          category: 'Minutes',
+          badge: 'Risk Committee Approval',
+          author: currentUser?.name || 'Risk Manager',
+          authorRole: currentUser?.role || 'Risk Manager (Approver)',
+          avatar: currentUser?.avatar || 'RM',
+          time: 'Just now',
+          content: `Formal Sign-off: Approved institutional operational thresholds for ${selectedBank.name}.`,
+        });
+      }
+    } else if (actionType === 'REJECT') {
+      setSelectedDecision('Reject');
+      if (pendingRequest && onRejectRequest) {
+        onRejectRequest(pendingRequest.id, `Rejected by ${currentUser?.name || 'Risk Manager'} via workspace pane.`);
+      } else if (onAddComment) {
+        onAddComment({
+          id: `c-rej-${Date.now()}`,
+          type: 'COMMENT',
+          category: 'Review',
+          badge: 'Variance Rejected',
+          author: currentUser?.name || 'Risk Manager',
+          authorRole: currentUser?.role || 'Risk Manager (Approver)',
+          avatar: currentUser?.avatar || 'RM',
+          time: 'Just now',
+          content: `Variance proposal rejected for ${selectedBank.name}. Baseline standard applies.`,
+        });
+      }
+    } else if (actionType === 'NEED_INFO') {
+      setSelectedDecision('Need More Info');
+      if (onAddComment) {
+        onAddComment({
+          id: `c-info-${Date.now()}`,
+          type: 'COMMENT',
+          category: 'Review',
+          badge: 'Clarification Needed',
+          author: currentUser?.name || 'Risk Reviewer',
+          authorRole: currentUser?.role || 'Compliance Committee',
+          avatar: currentUser?.avatar || 'CR',
+          time: 'Just now',
+          content: `Need More Info: Please provide additional risk modeling, portfolio stress test data, and living expense benchmark validation.`,
+        });
+      }
+    }
+  };
 
   if (!policy) {
     return (
@@ -211,66 +290,161 @@ export default function PolicyWorkspacePane({
   return (
     <main className="flex-1 min-w-0 overflow-y-auto custom-scrollbar bg-[#dcecfe] text-slate-900 p-5 sm:p-7 space-y-6">
       {/* 1. Header: Clean Title & Action Buttons + Active / Inactive Status Switcher */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-semibold text-slate-700">{policy.breadcrumb}</span>
+      <div className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        {/* Left Section: Breadcrumbs, Badges, Title, and 2-line Metadata */}
+        <div className="space-y-1.5 min-w-0">
+          {/* Line 1: Breadcrumb + Version Pill + APRA Standard Badge */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-[11.5px] font-semibold text-slate-700">{policy.breadcrumb}</span>
             <span className="text-[10.5px] font-mono font-bold bg-slate-100 text-slate-900 px-2 py-0.5 rounded border border-slate-300">
               {policy.latestVersion}
             </span>
-            <span className="text-[10.5px] font-bold bg-slate-100 text-slate-900 px-2 py-0.5 rounded border border-slate-300">
-              {policy.complianceLevel}
-            </span>
+            {policy.complianceLevel && (
+              <span className="text-[10.5px] font-bold bg-slate-100 text-slate-900 px-2 py-0.5 rounded border border-slate-300">
+                {policy.complianceLevel}
+              </span>
+            )}
           </div>
 
-          <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+          {/* Line 2: Policy Title */}
+          <h1 className="text-xl font-bold text-slate-900 tracking-tight leading-snug">
             {policy.title}
           </h1>
 
-          <div className="flex items-center gap-3 text-xs text-slate-600 mt-1">
+          {/* Line 3: Owner & Last Updated strictly in ONE single horizontal row */}
+          <div className="flex items-center gap-2.5 text-xs text-slate-600 whitespace-nowrap pt-0.5">
             <span>Owner: <strong className="text-slate-900 font-bold">{policy.ownedBy}</strong></span>
-            <span>•</span>
+            <span className="text-slate-400 font-bold">•</span>
             <span>Last Updated: <strong className="text-slate-900 font-bold">{policy.lastUpdated}</strong></span>
           </div>
         </div>
 
-        {/* Action Buttons + Active / Inactive Button */}
-        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
-          {/* Active / Inactive Toggle Button for Selected Bank */}
-          {onTogglePolicyActive && (
+        {/* Right Section: Compact 2-Row Action Cluster */}
+        <div className="flex flex-col items-end gap-2 flex-shrink-0">
+          {/* Row 1: [Active Toggle] [Configure] [Export Cert] */}
+          <div className="flex items-center gap-2">
+            {onTogglePolicyActive && (
+              <button
+                onClick={() => onTogglePolicyActive(policy.id, selectedBank.id)}
+                className={`h-9 flex items-center justify-center gap-1.5 px-3 rounded-lg text-xs font-bold transition cursor-pointer border shadow-2xs ${
+                  isPolicyActive
+                    ? 'bg-slate-100 text-slate-900 border-slate-300 hover:bg-slate-200'
+                    : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-900 hover:text-white'
+                }`}
+                title={isPolicyActive ? "Click to set this policy to Inactive for this bank" : "Click to Activate this policy for this bank"}
+              >
+                <Power className="w-3.5 h-3.5 text-slate-700" />
+                {isPolicyActive ? (
+                  <span>🟢 Active</span>
+                ) : (
+                  <span>⚡ Activate</span>
+                )}
+              </button>
+            )}
+
             <button
-              onClick={() => onTogglePolicyActive(policy.id, selectedBank.id)}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition cursor-pointer border shadow-2xs ${
-                isPolicyActive
-                  ? 'bg-slate-100 text-slate-900 border-slate-300 hover:bg-slate-200'
-                  : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-900 hover:text-white'
-              }`}
-              title={isPolicyActive ? "Click to set this policy to Inactive for this bank" : "Click to Activate this policy for this bank"}
+              onClick={onOpenEditModal}
+              className="w-[124px] h-9 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
             >
-              <Power className="w-3.5 h-3.5 text-slate-700" />
-              {isPolicyActive ? (
-                <span>🟢 Active</span>
-              ) : (
-                <span>⚡ Activate</span>
-              )}
+              <FileEdit className="w-3.5 h-3.5" />
+              <span>Configure</span>
             </button>
-          )}
 
-          <button
-            onClick={onOpenEditModal}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
-          >
-            <FileEdit className="w-3.5 h-3.5" />
-            <span>Configure</span>
-          </button>
+            <button
+              onClick={onOpenExportModal}
+              className="w-[124px] h-9 flex items-center justify-center gap-1.5 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 px-3 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+            >
+              <Share2 className="w-3.5 h-3.5 text-slate-700" />
+              <span>Export Cert</span>
+            </button>
+          </div>
 
-          <button
-            onClick={onOpenExportModal}
-            className="flex items-center gap-1.5 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 px-3.5 py-2 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
-          >
-            <Share2 className="w-3.5 h-3.5 text-slate-700" />
-            <span>Export Cert</span>
-          </button>
+          {/* Row 2: [Approve ▾ Dropdown] [Submit Button] */}
+          <div className="flex items-center justify-end gap-2">
+            {/* Dropdown directly under Configure */}
+            <div className="relative" ref={reviewMenuRef}>
+              <button
+                onClick={() => setIsReviewMenuOpen(!isReviewMenuOpen)}
+                className="w-[124px] h-9 flex items-center justify-between gap-1 bg-white hover:bg-slate-50 text-slate-900 border border-slate-300 px-2.5 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+                title={`Decision: ${selectedDecision}. Click to change.`}
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  {selectedDecision === 'Approve' && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                  )}
+                  {selectedDecision === 'Reject' && (
+                    <XCircle className="w-3.5 h-3.5 text-rose-600 flex-shrink-0" />
+                  )}
+                  {selectedDecision === 'Need More Info' && (
+                    <HelpCircle className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+                  )}
+                  <span className="truncate">{selectedDecision}</span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-700 transition-transform flex-shrink-0 ${isReviewMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isReviewMenuOpen && (
+                <div className="absolute right-0 mt-1.5 w-44 bg-white border border-slate-200 rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-in fade-in-50 duration-100">
+                  <button
+                    onClick={() => handleReviewAction('APPROVE')}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold transition cursor-pointer ${
+                      selectedDecision === 'Approve' ? 'bg-emerald-50 text-emerald-800' : 'text-slate-800 hover:bg-slate-50 hover:text-emerald-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+                      <span className="font-bold text-slate-900">Approve</span>
+                    </div>
+                    {selectedDecision === 'Approve' && (
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
+                  </button>
+
+                  <button
+                    onClick={() => handleReviewAction('REJECT')}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold transition cursor-pointer ${
+                      selectedDecision === 'Reject' ? 'bg-rose-50 text-rose-800' : 'text-slate-800 hover:bg-slate-50 hover:text-rose-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <XCircle className="w-4 h-4 text-rose-600 flex-shrink-0" />
+                      <span className="font-bold text-slate-900">Reject</span>
+                    </div>
+                    {selectedDecision === 'Reject' && (
+                      <Check className="w-3.5 h-3.5 text-rose-600" />
+                    )}
+                  </button>
+
+                  <div className="h-px bg-slate-100 my-0.5"></div>
+
+                  <button
+                    onClick={() => handleReviewAction('NEED_INFO')}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-left text-xs font-semibold transition cursor-pointer ${
+                      selectedDecision === 'Need More Info' ? 'bg-blue-50 text-blue-800' : 'text-slate-800 hover:bg-slate-50 hover:text-blue-700'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                      <span className="font-bold text-slate-900">Need More Info</span>
+                    </div>
+                    {selectedDecision === 'Need More Info' && (
+                      <Check className="w-3.5 h-3.5 text-blue-600" />
+                    )}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button (Blue, directly below Export Cert) */}
+            <button
+              onClick={onOpenEditModal}
+              className="w-[124px] h-9 flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 rounded-lg text-xs font-bold shadow-2xs transition cursor-pointer"
+              title="Submit configuration or variance request"
+            >
+              <SendHorizontal className="w-3.5 h-3.5" />
+              <span>Submit</span>
+            </button>
+          </div>
         </div>
       </div>
 

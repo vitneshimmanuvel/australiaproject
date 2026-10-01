@@ -542,6 +542,10 @@ export default function App() {
           onOpenEditModal={() => setIsEditBankModalOpen(true)}
           onOpenExportModal={() => setIsExportModalOpen(true)}
           onTogglePolicyActive={handleTogglePolicyActive}
+          currentUser={currentUser}
+          onAddComment={handleAddComment}
+          onAcceptRequest={handleAcceptRequest}
+          onRejectRequest={handleRejectRequest}
         />
 
         {/* Draggable Divider Handle (Center Workspace <-> Right Feed) */}
