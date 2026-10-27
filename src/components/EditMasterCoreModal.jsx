@@ -118,7 +118,7 @@ export default function EditMasterCoreModal({
                     type="text"
                     value={clause.clauseId}
                     onChange={(e) => handleClauseChange(idx, 'clauseId', e.target.value)}
-                    className="w-24 bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono font-bold text-blue-700 outline-none"
+                    className="w-24 bg-white border border-slate-300 rounded px-2 py-1 text-xs font-mono font-bold text-[#0057B8] outline-none"
                   />
                   <input
                     type="text"
@@ -150,7 +150,7 @@ export default function EditMasterCoreModal({
           
           <button
             onClick={handleSave}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer"
+            className="flex items-center gap-2 bg-[#0057B8] hover:bg-[#004EA6] text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer"
           >
             <Save className="w-4 h-4" />
             <span>Publish Master Baseline to All Banks</span>

@@ -39,9 +39,11 @@ export default function App() {
   const [selectedBank, setSelectedBank] = useState(banksList[0]); // CBA by default
 
   // Data states - Initialize with 2 policies per department and Credit Card policy first
+  // Data states - Initialize with 2 policies per department and Credit Card policy first
   const [departments, setDepartments] = useState(DEFAULT_DEPARTMENTS);
   const [selectedDepartmentId, setSelectedDepartmentId] = useState('all');
   const [policies, setPolicies] = useState(DEFAULT_POLICIES);
+  const [allPolicies, setAllPolicies] = useState(DEFAULT_POLICIES);
   const [selectedPolicyId, setSelectedPolicyId] = useState('credit-card-limits-policy');
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -88,7 +90,9 @@ export default function App() {
       canEdit: true,
       policyPermissions: {
         'credit-card-limits-policy': { canView: true, canEdit: true },
+        'credit-card-rewards-sop': { canView: true, canEdit: true },
         'personal-loans-assessment-sop': { canView: true, canEdit: true },
+        'mortgage-underwriting-standard': { canView: true, canEdit: true },
         'customer-onboarding-sop': { canView: true, canEdit: true },
         'commercial-kyc-sop': { canView: true, canEdit: true },
         'remote-access-security-policy': { canView: true, canEdit: true },
@@ -98,7 +102,9 @@ export default function App() {
       },
       allowedPolicyIds: [
         'credit-card-limits-policy',
+        'credit-card-rewards-sop',
         'personal-loans-assessment-sop',
+        'mortgage-underwriting-standard',
         'customer-onboarding-sop',
         'commercial-kyc-sop',
         'remote-access-security-policy',
@@ -119,7 +125,9 @@ export default function App() {
       canEdit: false,
       policyPermissions: {
         'credit-card-limits-policy': { canView: false, canEdit: false },
+        'credit-card-rewards-sop': { canView: false, canEdit: false },
         'personal-loans-assessment-sop': { canView: false, canEdit: false },
+        'mortgage-underwriting-standard': { canView: false, canEdit: false },
         'customer-onboarding-sop': { canView: true, canEdit: false },
         'commercial-kyc-sop': { canView: false, canEdit: false },
         'remote-access-security-policy': { canView: true, canEdit: true },
@@ -141,7 +149,9 @@ export default function App() {
       canEdit: true,
       policyPermissions: {
         'credit-card-limits-policy': { canView: true, canEdit: true },
+        'credit-card-rewards-sop': { canView: true, canEdit: true },
         'personal-loans-assessment-sop': { canView: true, canEdit: true },
+        'mortgage-underwriting-standard': { canView: true, canEdit: true },
         'customer-onboarding-sop': { canView: false, canEdit: false },
         'commercial-kyc-sop': { canView: false, canEdit: false },
         'remote-access-security-policy': { canView: false, canEdit: false },
@@ -149,7 +159,7 @@ export default function App() {
         'aml-ctf-screening-policy': { canView: false, canEdit: false },
         'cdr-privacy-policy': { canView: false, canEdit: false }
       },
-      allowedPolicyIds: ['credit-card-limits-policy', 'personal-loans-assessment-sop'],
+      allowedPolicyIds: ['credit-card-limits-policy', 'credit-card-rewards-sop', 'personal-loans-assessment-sop', 'mortgage-underwriting-standard'],
       lastActive: 'Yesterday, 4:50 PM'
     },
     {
@@ -163,7 +173,9 @@ export default function App() {
       canEdit: true,
       policyPermissions: {
         'credit-card-limits-policy': { canView: true, canEdit: true },
+        'credit-card-rewards-sop': { canView: true, canEdit: true },
         'personal-loans-assessment-sop': { canView: true, canEdit: true },
+        'mortgage-underwriting-standard': { canView: true, canEdit: true },
         'customer-onboarding-sop': { canView: true, canEdit: true },
         'commercial-kyc-sop': { canView: true, canEdit: true },
         'remote-access-security-policy': { canView: true, canEdit: true },
@@ -173,7 +185,9 @@ export default function App() {
       },
       allowedPolicyIds: [
         'credit-card-limits-policy',
+        'credit-card-rewards-sop',
         'personal-loans-assessment-sop',
+        'mortgage-underwriting-standard',
         'customer-onboarding-sop',
         'commercial-kyc-sop',
         'remote-access-security-policy',
@@ -220,7 +234,7 @@ export default function App() {
       const data = await apiService.getHierarchy();
       if (data && Array.isArray(data) && data.length > 0) {
         const enriched = data.map(d => {
-          if (['retail-lending', 'onboarding', 'security', 'legal-compliance'].includes(d.id)) {
+          if (['credit-cards', 'retail-lending', 'onboarding', 'security', 'legal-compliance'].includes(d.id)) {
             return { ...d, count: Math.max(d.count || 0, 2) };
           }
           return d;
@@ -238,55 +252,53 @@ export default function App() {
   // 2. Fetch Policies with Bank User Access Control Filtering (Completely hides blocked policies)
   const loadPolicies = useCallback(async () => {
     try {
-      const data = await apiService.getPolicies(
-        selectedDepartmentId,
-        searchQuery,
-        currentUser.roleType
-      );
-      let baseData = (data && Array.isArray(data) && data.length > 0) ? data : DEFAULT_POLICIES;
+      const data = await apiService.getPolicies('all', '', currentUser.roleType);
+      const rawList = (data && Array.isArray(data) && data.length > 0) ? data : DEFAULT_POLICIES;
 
-      if (selectedDepartmentId && selectedDepartmentId !== 'all') {
-        baseData = baseData.filter(p => p.department_id === selectedDepartmentId);
-      }
-      if (searchQuery) {
-        baseData = baseData.filter(p => 
-          (p.title && p.title.toLowerCase().includes(searchQuery.toLowerCase())) || 
-          (p.summary && p.summary.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-      }
+      // Robustly combine with DEFAULT_POLICIES to guarantee 2 policies per primary department
+      const map = new Map();
+      DEFAULT_POLICIES.forEach(p => map.set(p.id, p));
+      rawList.forEach(p => map.set(p.id, p));
+      const fullList = Array.from(map.values());
+
+      setAllPolicies(fullList);
 
       // Enforce employee policy access permissions set by the Bank Owner
-      let filtered = baseData;
+      let baseData = fullList;
       if (currentUser.roleType === 'employee' && currentStaffConfig) {
         if (currentStaffConfig.canView === false) {
-          filtered = [];
+          baseData = [];
         } else {
-          filtered = baseData.filter(pol => {
+          baseData = fullList.filter(pol => {
             if (currentStaffConfig.policyPermissions && currentStaffConfig.policyPermissions[pol.id]) {
               return currentStaffConfig.policyPermissions[pol.id].canView === true;
             }
             if (currentStaffConfig.allowedPolicyIds) {
-              return currentStaffConfig.allowedPolicyIds.includes(pol.id);
+              return currentStaffConfig.allowedPolicyIds.includes(pol.id) || !DEFAULT_POLICIES.some(dp => dp.id === pol.id);
             }
             return true;
           });
         }
       }
 
-      setPolicies(filtered);
-      if (filtered.length > 0) {
-        if (!selectedPolicyId || !filtered.some(p => p.id === selectedPolicyId)) {
-          const creditCard = filtered.find(p => p.id === 'credit-card-limits-policy');
-          setSelectedPolicyId(creditCard ? creditCard.id : filtered[0].id);
+      setPolicies(baseData);
+
+      setSelectedPolicyId(prev => {
+        if (prev && baseData.some(p => p.id === prev)) {
+          return prev;
         }
-      } else {
-        setSelectedPolicyId(null);
-      }
+        if (baseData.length > 0) {
+          const creditCard = baseData.find(p => p.id === 'credit-card-limits-policy');
+          return creditCard ? creditCard.id : baseData[0].id;
+        }
+        return null;
+      });
     } catch (err) {
       console.error('Failed to load policies:', err);
+      setAllPolicies(DEFAULT_POLICIES);
       setPolicies(DEFAULT_POLICIES);
     }
-  }, [selectedDepartmentId, searchQuery, currentUser.roleType, selectedPolicyId, currentStaffConfig]);
+  }, [currentUser.roleType, currentStaffConfig]);
 
   // 3. Fetch Maker-Checker items & Notification count
   const loadMakerChecker = useCallback(async () => {
@@ -418,7 +430,10 @@ export default function App() {
   };
 
   // Active selected policy - Defaults to Credit Card Issuance policy
-  const activePolicy = policies.find(p => p.id === selectedPolicyId) || DEFAULT_POLICIES[0];
+  const activePolicy = allPolicies.find(p => p.id === selectedPolicyId) 
+    || policies.find(p => p.id === selectedPolicyId) 
+    || allPolicies[0] 
+    || DEFAULT_POLICIES[0];
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-[#eef4fa] font-sans text-slate-800">
@@ -481,10 +496,25 @@ export default function App() {
             <>
               <HierarchyPane
                 selectedDepartmentId={selectedDepartmentId}
-                onSelectDepartment={(id) => setSelectedDepartmentId(id)}
-                policies={policies}
+                onSelectDepartment={(id) => {
+                  setSelectedDepartmentId(id);
+                  if (id !== 'all') {
+                    const currentSelected = allPolicies.find(p => p.id === selectedPolicyId);
+                    if (!currentSelected || currentSelected.department_id !== id) {
+                      const firstInDept = allPolicies.find(p => p.department_id === id);
+                      if (firstInDept) setSelectedPolicyId(firstInDept.id);
+                    }
+                  }
+                }}
+                policies={allPolicies}
                 selectedPolicyId={selectedPolicyId}
-                onSelectPolicy={(id) => setSelectedPolicyId(id)}
+                onSelectPolicy={(id) => {
+                  setSelectedPolicyId(id);
+                  const pol = allPolicies.find(p => p.id === id);
+                  if (pol && pol.department_id) {
+                    setSelectedDepartmentId(pol.department_id);
+                  }
+                }}
                 onOpenAddPolicyModal={handleOpenAddPolicyModal}
                 canCreateDocument={canCurrentUserCreateDocument}
                 isMobileOpen={isMobileLeftOpen}
@@ -536,7 +566,7 @@ export default function App() {
                 refreshTrigger={refreshTrigger}
                 onOpenMakerChecker={() => setIsMakerCheckerOpen(true)}
                 onSelectPolicy={(id) => setSelectedPolicyId(id)}
-                policies={policies}
+                policies={allPolicies}
               />
             </>
           )}
@@ -607,7 +637,7 @@ export default function App() {
           setBankUsers(updated);
           setRefreshTrigger(prev => prev + 1);
         }}
-        policies={policies}
+        policies={allPolicies}
       />
 
       {/* 7. Super Admin Direct Gateway Login Modal */}

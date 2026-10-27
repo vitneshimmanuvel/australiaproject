@@ -7,6 +7,10 @@
   --text-main: #0f172a;
   --text-muted: #475569;
   --text-subtle: #64748b;
+  --primary-color: #0057B8;
+  --primary-hover: #004EA6;
+  --primary-light: #EBF4FC;
+  --primary-border: #B8D7F7;
 }
 
 body {
@@ -14,18 +18,25 @@ body {
   padding: 0;
   background-color: var(--bg-app);
   color: var(--text-main);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
-  font-size: 14px;
+  font-size: 13.5px;
   line-height: 1.5;
+  letter-spacing: -0.01em;
+}
+
+/* Poppins specific weight readability enhancements */
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Poppins', sans-serif;
+  letter-spacing: -0.02em;
 }
 
 /* Light Mode Minimal Scrollbar */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -34,16 +45,30 @@ body {
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 4px;
+  border-radius: 9999px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Clean Input Focus */
+/* Clean Institutional Input Focus with #0057B8 Primary Ring */
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: #3b82f6 !important;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  border-color: #0057B8 !important;
+  box-shadow: 0 0 0 3px rgba(0, 87, 184, 0.16) !important;
 }
+
+/* Glassmorphism & Card Utilities */
+.glass-header {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.badge-primary {
+  background-color: #EBF4FC;
+  color: #0057B8;
+  border: 1px solid #B8D7F7;
+}
+

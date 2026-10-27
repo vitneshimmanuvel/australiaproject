@@ -67,8 +67,8 @@ export default function HierarchyPane({
   const [isAddDeptModalOpen, setIsAddDeptModalOpen] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
   const [isCreatingDept, setIsCreatingDept] = useState(false);
-  // Default expanded to retail-lending & onboarding so the user immediately sees the active policies
-  const [expandedDeptIds, setExpandedDeptIds] = useState(['retail-lending', 'onboarding']);
+  // Default expanded to primary banking libraries so policies are immediately visible
+  const [expandedDeptIds, setExpandedDeptIds] = useState(['credit-cards', 'retail-lending', 'onboarding', 'security', 'legal-compliance']);
 
   const toggleDeptExpand = (deptId, e) => {
     if (e) e.stopPropagation();
@@ -85,7 +85,7 @@ export default function HierarchyPane({
       const data = await apiService.getHierarchy();
       if (data && Array.isArray(data) && data.length > 0) {
         const enriched = data.map(d => {
-          if (['retail-lending', 'onboarding', 'security', 'legal-compliance'].includes(d.id)) {
+          if (['credit-cards', 'retail-lending', 'onboarding', 'security', 'legal-compliance'].includes(d.id)) {
             return { ...d, count: Math.max(d.count || 0, 2) };
           }
           return d;
@@ -112,9 +112,17 @@ export default function HierarchyPane({
     loadHierarchy();
   }, [refreshTrigger]);
 
-  const allAvailablePolicies = (Array.isArray(policies) && policies.length > 0)
-    ? policies 
-    : (internalPolicies.length > 0 ? internalPolicies : DEFAULT_POLICIES);
+  // Robustly combine policies across defaults, backend fetch, and props to guarantee no department drops to 0
+  const combinedPolicies = [
+    ...DEFAULT_POLICIES,
+    ...(Array.isArray(internalPolicies) ? internalPolicies : []),
+    ...(Array.isArray(policies) ? policies : [])
+  ];
+  const policyMap = new Map();
+  combinedPolicies.forEach(p => {
+    if (p && p.id) policyMap.set(p.id, p);
+  });
+  const allAvailablePolicies = Array.from(policyMap.values());
 
   const handleCreateDepartment = async (e) => {
     e.preventDefault();
@@ -133,7 +141,7 @@ export default function HierarchyPane({
   };
 
   // Filter departments: Split into primary active banking categories vs empty/secondary categories
-  const primaryDeptIds = ['retail-lending', 'onboarding', 'security', 'legal-compliance'];
+  const primaryDeptIds = ['credit-cards', 'retail-lending', 'onboarding', 'security', 'legal-compliance'];
   const [showOtherCategories, setShowOtherCategories] = useState(false);
 
   const activeDepartments = departments.filter(d => 
@@ -173,33 +181,46 @@ export default function HierarchyPane({
             : 'relative z-10'}
         `}
       >
-        {/* Top Search bar with Pin icon */}
+        {/* Top Search bar with Pin icon & Visible Banking Blue Border */}
         <div className="p-3 bg-[#f0f4f9] pb-1">
-          <div className="relative flex items-center">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div className="relative flex items-center group/search">
+            <Search className="w-3.5 h-3.5 text-[#0057B8] absolute left-3 top-1/2 -translate-y-1/2 transition-colors pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search sections..."
-              className="w-full bg-white border border-[#dbe4ef] rounded-lg pl-8 pr-7 py-1.5 text-[12.5px] text-slate-800 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none transition shadow-2xs"
+              className="w-full bg-white border-2 border-[#0057B8]/40 hover:border-[#0057B8] focus:border-[#0057B8] focus:ring-2 focus:ring-[#0057B8]/20 rounded-xl pl-8 pr-14 py-1.5 text-[12.5px] text-slate-800 placeholder-slate-400 outline-none transition shadow-2xs font-medium"
             />
-            <button
-              onClick={() => setIsPinned(!isPinned)}
-              title={isPinned ? "Unpin sidebar" : "Pin sidebar"}
-              className={`absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded transition ${
-                isPinned ? 'text-slate-800' : 'text-slate-400 hover:text-slate-600'
-              }`}
-            >
-              <Pin className="w-3 h-3" />
-            </button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  title="Clear search"
+                  className="p-0.5 rounded-full text-slate-400 hover:text-white hover:bg-[#0057B8] transition cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+              <button
+                onClick={() => setIsPinned(!isPinned)}
+                title={isPinned ? "Unpin sidebar" : "Pin sidebar"}
+                className={`p-1 rounded-md transition border cursor-pointer ${
+                  isPinned 
+                    ? 'bg-[#0057B8] text-white border-[#0057B8] shadow-2xs' 
+                    : 'text-[#0057B8] bg-blue-50/80 hover:bg-[#0057B8] hover:text-white border-[#0057B8]/30 shadow-2xs'
+                }`}
+              >
+                <Pin className="w-3 h-3" />
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Title Header: Exact Match to libtrack_UI (2).pdf: "Library Group" */}
         <div className="px-3.5 pt-2.5 pb-1.5 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Layers className="w-3.5 h-3.5 text-slate-600" />
+            <Layers className="w-3.5 h-3.5 text-[#0057B8]" />
             <h2 className="text-[13.5px] font-bold text-slate-800 tracking-tight">
               Library Group
             </h2>
@@ -207,33 +228,38 @@ export default function HierarchyPane({
           {selectedDepartmentId !== 'all' ? (
             <button
               onClick={() => onSelectDepartment('all')}
-              className="text-[11px] font-medium text-slate-500 hover:text-slate-800 px-1.5 py-0.5 rounded hover:bg-slate-200/50 transition cursor-pointer"
+              className="text-[11px] font-bold text-[#0057B8] bg-blue-50 hover:bg-[#0057B8] hover:text-white border-2 border-[#0057B8] px-2.5 py-0.5 rounded-lg transition-all cursor-pointer shadow-xs flex items-center gap-1 active:scale-95"
+              title="Show all library partitions"
             >
-              Show All
+              <span>Show All</span>
             </button>
           ) : (
-            <span className="text-[10.5px] font-medium text-slate-400 px-1.5 py-0.5 bg-slate-200/50 rounded">
-              Active ({displayedPrimary.length})
-            </span>
+            <button
+              onClick={() => onSelectDepartment('all')}
+              className="text-[11px] font-semibold text-[#0057B8] bg-blue-50/70 hover:bg-blue-100 border border-[#0057B8]/30 px-2 py-0.5 rounded-lg transition shadow-2xs cursor-pointer"
+              title="Filter by category"
+            >
+              All Sections ({displayedPrimary.length})
+            </button>
           )}
         </div>
 
         {/* Department / Category Tree List */}
         <div className="flex-1 overflow-y-auto px-2 py-1 space-y-0.5 custom-scrollbar">
           
-          {/* PRIMARY 4 ACTIVE CATEGORIES WITH EXPANDABLE HIERARCHY */}
+          {/* PRIMARY ACTIVE CATEGORIES WITH EXPANDABLE HIERARCHY */}
           <div className="space-y-1">
             {displayedPrimary.map((dept) => {
               const isSelected = selectedDepartmentId === dept.id;
               const isExpanded = expandedDeptIds.includes(dept.id);
-              const deptPolicies = allAvailablePolicies.filter(p => p.department_id === dept.id && !p.is_masked);
+              const deptPolicies = allAvailablePolicies.filter(p => p.department_id === dept.id);
 
               return (
                 <div key={dept.id} className="space-y-0.5">
                   <div
                     className={`group relative flex items-center justify-between rounded-lg px-2.5 py-1.5 transition-colors cursor-pointer ${
                       isSelected 
-                        ? 'bg-slate-200/80 text-slate-900 font-semibold shadow-2xs' 
+                        ? 'bg-[#0057B8]/10 text-[#0057B8] font-semibold border-l-2 border-[#0057B8] shadow-2xs' 
                         : 'hover:bg-slate-100/80 text-slate-700'
                     }`}
                     onClick={() => {
@@ -273,7 +299,7 @@ export default function HierarchyPane({
                           ? 'bg-white text-slate-800 shadow-2xs' 
                           : 'text-slate-500 bg-slate-200/50'
                       }`}>
-                        {deptPolicies.length}
+                        {Math.max(deptPolicies.length, dept.count || 0)}
                       </span>
 
                       {/* Hover + button with Tooltip */}
@@ -326,11 +352,10 @@ export default function HierarchyPane({
                               onClick={(e) => {
                                 e.stopPropagation();
                                 if (onSelectPolicy) onSelectPolicy(pol.id);
-                                if (onSelectDepartment) onSelectDepartment(dept.id);
                               }}
                               className={`group/pol flex items-center justify-between py-1.5 px-2 rounded-md text-[12px] transition cursor-pointer ${
                                 isPolSelected
-                                  ? 'bg-slate-900 text-white font-medium shadow-2xs'
+                                  ? 'bg-[#0057B8] text-white font-medium shadow-primary-sm'
                                   : 'text-slate-700 hover:bg-slate-200/60'
                               }`}
                               title={pol.title}
@@ -451,7 +476,7 @@ export default function HierarchyPane({
                                     if (onSelectPolicy) onSelectPolicy(pol.id);
                                   }}
                                   className={`py-1 px-1.5 rounded text-[11px] truncate cursor-pointer ${
-                                    selectedPolicyId === pol.id ? 'bg-slate-900 text-white font-medium' : 'text-slate-600 hover:bg-slate-200'
+                                    selectedPolicyId === pol.id ? 'bg-[#0057B8] text-white font-medium shadow-2xs' : 'text-slate-600 hover:bg-slate-200'
                                   }`}
                                 >
                                   {pol.title}
@@ -470,7 +495,7 @@ export default function HierarchyPane({
 
         </div>
 
-        {/* Dynamic + Add Section / Partition Button */}
+        {/* Dynamic + Add Section / Partition Button with Prominent Blue Border */}
         <div className="p-2.5 border-t border-[#e2e8f0] bg-[#f8fafc]">
           <button
             onClick={() => {
@@ -480,14 +505,14 @@ export default function HierarchyPane({
               }
               setIsAddDeptModalOpen(true);
             }}
-            className={`w-full flex items-center justify-center gap-1.5 py-1.5 px-2.5 rounded-lg border border-dashed transition cursor-pointer shadow-2xs text-[12px] font-medium ${
+            className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl border-2 transition cursor-pointer shadow-xs text-[12.5px] font-bold ${
               canCreateDocument
-                ? 'border-slate-300 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-700'
+                ? 'border-[#0057B8]/40 hover:border-[#0057B8] bg-white hover:bg-blue-50/70 text-[#0057B8] hover:shadow-primary-sm active:scale-98'
                 : 'border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed'
             }`}
             title={canCreateDocument ? "Add new section partition" : "Partition creation restricted by Manager"}
           >
-            {canCreateDocument ? <Plus className="w-3 h-3 text-slate-500" /> : <Lock className="w-3 h-3 text-slate-400" />}
+            {canCreateDocument ? <Plus className="w-3.5 h-3.5 text-[#0057B8]" /> : <Lock className="w-3.5 h-3.5 text-slate-400" />}
             <span>{canCreateDocument ? '+ Add Section / Partition' : 'Partition Authoring Restricted'}</span>
           </button>
         </div>

@@ -1,10 +1,10 @@
 export const DEFAULT_POLICIES = [
-  // 1. Retail Lending (2 policies) - Credit Card Product Suite is first to land
+  // 1. Credit Cards Library (2 policies)
   {
     id: 'credit-card-limits-policy',
-    department_id: 'retail-lending',
-    department_name: 'Retail Lending',
-    title: 'Credit Card Product Suite & Issuance Policy',
+    department_id: 'credit-cards',
+    department_name: 'Credit Cards',
+    title: 'Credit Card Issuance & Daily Limit Policy',
     product_category: 'Credit Cards',
     is_product: true,
     summary: 'Master product policy governing tiered approval thresholds, mandatory KYC/credit score verification, and direct in-system operational specifications.',
@@ -72,6 +72,40 @@ All standard consumer applications must be adjudicated within 24 hours of docume
     updated_at: new Date().toISOString()
   },
   {
+    id: 'credit-card-rewards-sop',
+    department_id: 'credit-cards',
+    department_name: 'Credit Cards',
+    title: 'Revolving Credit Line & Card Activation Standard',
+    product_category: 'Credit Cards',
+    summary: 'Procedures for digital wallet tokenization, revolving balance risk buffers, and instant credit limit adjustments.',
+    version: '1.1',
+    status: 'active',
+    is_masked: false,
+    content: `### 1. Card Activation & Tokenization
+Governs instant card provisioning into Apple Wallet, Google Pay, and physical chip card PIN generation.
+
+### 2. Revolving Credit Facility Guidelines
+1. **Automated Risk Monitoring**: Daily review of revolving credit utilization (>85% triggers early warning flags).
+2. **Limit Increase Requests**: Require 6 months on-time payment track record before eligibility.
+3. **Emergency Limit Blocks**: Suspicious transactions trigger automated SMS confirmation and transient card lock.`,
+    parameters: {
+      approval_limits: {
+        officer_cap: '$10,000',
+        manager_cap: '$25,000'
+      },
+      turnaround_sla: '4 Hours',
+      verification_steps: [
+        'Automated 3-Factor Digital Device Binding',
+        'NPP Real-time PayID Activation Check',
+        'SMS One-Time Passcode Authorization'
+      ]
+    },
+    created_by: 'Marcus Vance (Approver)',
+    updated_at: new Date().toISOString()
+  },
+
+  // 2. Retail Lending Library (2 policies)
+  {
     id: 'personal-loans-assessment-sop',
     department_id: 'retail-lending',
     department_name: 'Retail Lending',
@@ -102,6 +136,39 @@ Governs credit assessment for unsecured personal loans up to $75,000 AUD, vehicl
       ]
     },
     created_by: 'Marcus Vance (Approver)',
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'mortgage-underwriting-standard',
+    department_id: 'retail-lending',
+    department_name: 'Retail Lending',
+    title: 'Residential Mortgages & Tier-1 Home Loan Assessment Standard',
+    summary: 'Regulatory assessment benchmarks for owner-occupied and investor residential mortgages under APRA APS 220 directives.',
+    version: '2.0',
+    status: 'active',
+    is_masked: false,
+    content: `### 1. Scope & Prudential Mandate
+Applies to all retail mortgage originations across branch, online, and broker channels adhering to APRA APS 220 credit risk standards.
+
+### 2. Mandatory Underwriting Thresholds
+1. **Serviceability Buffer**: Mandatory minimum +3.00% interest rate buffer applied over the standard variable rate.
+2. **Loan-to-Value Ratio (LVR)**: LVR exceeding 80% requires Lenders Mortgage Insurance (LMI) validation.
+3. **Genuine Savings**: Minimum 5% verified genuine savings held for at least 3 continuous months.`,
+    parameters: {
+      approval_limits: {
+        officer_cap: '$500,000',
+        manager_cap: '$1,200,000',
+        executive_cap: '$2,500,000'
+      },
+      turnaround_sla: '72 Hours',
+      verification_steps: [
+        '3-Month Genuine Savings Bank Statement Verification',
+        'Valuation Report via CoreLogic Electronic Valuation (EVR)',
+        'HEM Living Expense Cross-Verification',
+        'Title Deed & Encumbrance Check via PEXA'
+      ]
+    },
+    created_by: 'Sarah Jenkins (Maker)',
     updated_at: new Date().toISOString()
   },
 
@@ -296,7 +363,8 @@ Governs secure customer-directed sharing of banking transaction data with Accred
 ];
 
 export const DEFAULT_DEPARTMENTS = [
-  { id: 'retail-lending', name: 'Retail Lending', icon: 'credit-card', count: 2 },
+  { id: 'credit-cards', name: 'Credit Cards', icon: 'credit-card', count: 2 },
+  { id: 'retail-lending', name: 'Retail Lending', icon: 'landmark', count: 2 },
   { id: 'onboarding', name: 'Onboarding', icon: 'user-check', count: 2 },
   { id: 'security', name: 'Security & InfoSec', icon: 'shield', count: 2 },
   { id: 'legal-compliance', name: 'Legal & Compliance', icon: 'scale', count: 2 },

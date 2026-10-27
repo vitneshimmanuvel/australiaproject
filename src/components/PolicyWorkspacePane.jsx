@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
   FileEdit, 
-  Share2, 
   Clock, 
   Lock, 
   Unlock, 
@@ -234,7 +233,7 @@ export default function PolicyWorkspacePane({
             {canEditPolicy ? (
               <button
                 onClick={() => onOpenConfigureModal(detailedPolicy)}
-                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-medium bg-[#1e293b] hover:bg-blue-900 text-white shadow-xs transition cursor-pointer"
+                className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[13px] font-medium bg-[#0057B8] hover:bg-[#004EA6] text-white shadow-primary-sm transition cursor-pointer"
                 title={isEmployee ? "Submit Proposed Amendments (Bank Employee)" : "Configure Clauses & Thresholds directly"}
               >
                 <FileEdit className="w-3.5 h-3.5" />
@@ -262,15 +261,6 @@ export default function PolicyWorkspacePane({
             >
               <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-slate-400'}`}></span>
               <span>{isActive ? 'Active' : 'Archived'}</span>
-            </button>
-
-            {/* Export */}
-            <button
-              onClick={onOpenExportModal}
-              className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-50 border border-slate-300 transition cursor-pointer"
-              title="Export or Share policy document"
-            >
-              <Share2 className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -724,7 +714,7 @@ export default function PolicyWorkspacePane({
               onClick={() => setActiveSupplementaryTab('training')}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition cursor-pointer ${
                 activeSupplementaryTab === 'training'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-primary-sm font-semibold'
                   : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
               }`}
               title="Staff Training & Onboarding Cost Tracking"
@@ -739,7 +729,7 @@ export default function PolicyWorkspacePane({
               disabled={reportItems.length === 0}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition ${
                 activeSupplementaryTab === 'reports'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-primary-sm font-semibold'
                   : reportItems.length > 0
                   ? 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100 cursor-pointer'
                   : 'bg-slate-100 text-slate-400 border border-slate-200/60 cursor-not-allowed opacity-60'
@@ -789,7 +779,7 @@ export default function PolicyWorkspacePane({
               onClick={() => setActiveSupplementaryTab('reg_reference')}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium flex items-center gap-1.5 transition cursor-pointer ${
                 activeSupplementaryTab === 'reg_reference'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-primary-sm font-semibold'
                   : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-100'
               }`}
               title="Optional Regulatory Reference Linkage"

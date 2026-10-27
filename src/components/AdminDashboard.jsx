@@ -7,7 +7,6 @@ import {
   Search, 
   FileText, 
   Lock, 
-  History, 
   Crown,
   PlusCircle,
   TrendingUp,
@@ -25,9 +24,10 @@ import {
   Check,
   Loader2,
   ChevronRight,
-  Info
+  Info,
+  ArrowLeft,
+  ExternalLink
 } from 'lucide-react';
-import { auditHistoryLogs } from '../data/mockData';
 
 // Detailed Bank Data: Registered Users, Policies Used & Login System Logs with Active Times
 const BANK_DETAILS = {
@@ -118,7 +118,8 @@ export default function AdminDashboard({
   const [bankSearch, setBankSearch] = useState('');
   const [policySearch, setPolicySearch] = useState('');
   const [selectedDomainFilter, setSelectedDomainFilter] = useState('ALL');
-  const [activeTab, setActiveTab] = useState('BANKS'); // 'BANKS' | 'POLICIES' | 'AUDIT'
+  const [activeTab, setActiveTab] = useState('BANKS'); // 'BANKS' | 'POLICIES'
+  const [selectedStandard, setSelectedStandard] = useState(null);
 
   // Bank Inspection State
   const [inspectedBank, setInspectedBank] = useState(null);
@@ -257,9 +258,6 @@ export default function AdminDashboard({
     } else if (lower.includes('standard') || lower.includes('framework') || lower.includes('library') || lower.includes('master')) {
       setActiveTab('POLICIES');
       replyText = `Navigated to **Master Library Standards** tab. You are governing ${policyList.length} master frameworks.`;
-    } else if (lower.includes('audit') || lower.includes('history')) {
-      setActiveTab('AUDIT');
-      replyText = `Switched to **Audit History & Activity Log** tab.`;
     } else if (lower.includes('add') || lower.includes('upload') || lower.includes('create standard')) {
       setIsAddFrameworkOpen(true);
       if (lower.includes('upload') || lower.includes('ai')) setAddMode('ai-upload');
@@ -303,7 +301,7 @@ export default function AdminDashboard({
               setIsAddFrameworkOpen(true);
               setAddMode('direct');
             }}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-xs cursor-pointer"
+            className="flex items-center gap-2 bg-[#0057B8] hover:bg-[#004EA6] text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-primary-sm cursor-pointer"
           >
             <PlusCircle className="w-4 h-4" />
             <span>Add Master Policy Framework</span>
@@ -322,10 +320,13 @@ export default function AdminDashboard({
       {/* 2. Navigation Tabs */}
       <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
         <button
-          onClick={() => setActiveTab('BANKS')}
+          onClick={() => {
+            setActiveTab('BANKS');
+            setSelectedStandard(null);
+          }}
           className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
             activeTab === 'BANKS'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-[#0057B8] text-white shadow-primary-sm font-semibold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
@@ -334,27 +335,18 @@ export default function AdminDashboard({
         </button>
 
         <button
-          onClick={() => setActiveTab('POLICIES')}
+          onClick={() => {
+            setActiveTab('POLICIES');
+            setSelectedStandard(null);
+          }}
           className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
             activeTab === 'POLICIES'
-              ? 'bg-slate-900 text-white shadow-xs'
+              ? 'bg-[#0057B8] text-white shadow-primary-sm font-semibold'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
           }`}
         >
           <FileText className="w-4 h-4" />
           <span>Master Library Standards ({policyList.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('AUDIT')}
-          className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center gap-2 ${
-            activeTab === 'AUDIT'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-          }`}
-        >
-          <History className="w-4 h-4" />
-          <span>Audit History & Activity Log</span>
         </button>
       </div>
 
@@ -369,13 +361,13 @@ export default function AdminDashboard({
             </div>
 
             <div className="relative w-72">
-              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="w-3.5 h-3.5 text-[#0057B8] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={bankSearch}
                 onChange={(e) => setBankSearch(e.target.value)}
                 placeholder="Search member banks..."
-                className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                className="w-full bg-white border-2 border-[#0057B8]/40 hover:border-[#0057B8] focus:border-[#0057B8] focus:ring-2 focus:ring-[#0057B8]/20 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition shadow-2xs font-medium"
               />
             </div>
           </div>
@@ -458,31 +450,238 @@ export default function AdminDashboard({
       )}
 
       {/* TAB 2: Master Library Standards */}
-      {activeTab === 'POLICIES' && (
+      {activeTab === 'POLICIES' && selectedStandard ? (
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs p-6 space-y-6 animate-in fade-in duration-150">
+          {/* Back Navigation Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200">
+            <button
+              onClick={() => setSelectedStandard(null)}
+              className="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer w-fit shadow-2xs active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4 text-slate-700" />
+              <span>Back to Master Standards List</span>
+            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] font-mono font-bold bg-blue-50 text-blue-800 px-3 py-1 rounded-full border border-blue-200">
+                Specification {selectedStandard.latestVersion}
+              </span>
+              <span className="text-[11px] font-bold bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full border border-emerald-200 flex items-center gap-1">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                Active & Enforced
+              </span>
+            </div>
+          </div>
+
+          {/* Standard Header Banner */}
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                  <span>{selectedStandard.breadcrumb}</span>
+                </div>
+                <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">
+                  {selectedStandard.title}
+                </h2>
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 pt-1">
+                  <span className="font-semibold text-slate-700">Governance Squad:</span>
+                  <span className="bg-white px-2.5 py-0.5 rounded-md border border-slate-200 text-slate-800 font-medium">
+                    {selectedStandard.ownedBy || 'Retail Credit Risk & Underwriting Squad'}
+                  </span>
+                  <span>•</span>
+                  <span className="font-semibold text-slate-700">Last Updated:</span>
+                  <span className="font-medium text-slate-800">{selectedStandard.lastUpdated || 'Sep 25, 2026'}</span>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  onClick={() => {
+                    onSelectPolicy?.(selectedStandard.id);
+                    onSwitchToLibraryView?.();
+                  }}
+                  className="flex items-center gap-1.5 bg-[#0057B8] hover:bg-[#004EA6] text-white font-bold px-4 py-2 rounded-xl text-xs transition shadow-primary-sm cursor-pointer active:scale-95"
+                >
+                  <Layers className="w-4 h-4" />
+                  <span>Open in 3-Pane Library View</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-3 border-t border-slate-200/80 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-emerald-800 font-semibold bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span>Regulatory Baseline: {selectedStandard.complianceLevel}</span>
+              </div>
+              <span className="text-slate-500 font-mono text-[11px]">
+                Enforced across 4 Subscribed Banks (CBA, NAB, Westpac, ANZ)
+              </span>
+            </div>
+          </div>
+
+          {/* Vision Statement / Mandate */}
+          <div className="space-y-2">
+            <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+              <span>Statutory Vision & Implementation Mandate</span>
+            </h4>
+            <p className="text-xs sm:text-sm text-slate-800 italic bg-amber-50/50 p-4 rounded-xl border border-amber-200 leading-relaxed font-serif">
+              "{selectedStandard.visionStatement}"
+            </p>
+          </div>
+
+          {/* Statutory Master Framework Clauses (ALL clauses) */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-emerald-700" />
+                <span>Statutory Master Clauses ({selectedStandard.coreFrameworkClauses?.length || 0})</span>
+              </h4>
+              <span className="text-[11px] text-slate-500 font-medium">Mandatory Non-Negotiable Rules</span>
+            </div>
+
+            <div className="space-y-2.5">
+              {selectedStandard.coreFrameworkClauses?.map((clause, idx) => (
+                <div
+                  key={idx}
+                  className="p-4 bg-white border border-slate-200 rounded-xl space-y-1.5 hover:border-slate-300 transition shadow-2xs"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-slate-900 text-white font-mono font-bold text-[11px]">
+                        {clause.clauseId}
+                      </span>
+                      <h5 className="font-extrabold text-xs text-slate-900">{clause.title}</h5>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded border border-emerald-200">
+                      Enforced
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed pl-1">
+                    {clause.content}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Monitored Telemetry Baseline */}
+          {selectedStandard.metricsTable && (
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
+                <span>Monitored Telemetry Baseline & SLA Targets</span>
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {selectedStandard.metricsTable.map((m, mIdx) => (
+                  <div key={mIdx} className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 space-y-1">
+                    <span className="text-slate-500 font-medium text-[11px] block">{m.metric}</span>
+                    <div className="text-base font-extrabold font-mono text-slate-900">{m.actual}</div>
+                    <div className="text-[10.5px] text-slate-500 flex items-center justify-between pt-1 border-t border-slate-200">
+                      <span>Target: <strong className="text-slate-700">{m.target}</strong></span>
+                      <span className="text-emerald-700 font-bold">{m.status || 'Nominal'}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Member Bank Custom Addenda Adoption */}
+          {selectedStandard.bankCustomAddenda && (
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Building2 className="w-3.5 h-3.5 text-blue-600" />
+                <span>Configured Member Bank Addenda & Overrides</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {Object.entries(selectedStandard.bankCustomAddenda).map(([bankKey, bConf]) => (
+                  <div key={bankKey} className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-xs uppercase text-slate-900 tracking-wide">
+                        {bankKey.toUpperCase()} Institutional Addendum
+                      </span>
+                      <span className="text-[10px] bg-blue-50 text-blue-700 font-bold px-2 py-0.5 rounded border border-blue-200">
+                        Configured
+                      </span>
+                    </div>
+                    {bConf.customClause && (
+                      <p className="text-[11.5px] text-slate-700 font-medium bg-slate-50 p-2 rounded-lg border border-slate-200">
+                        {bConf.customClause}
+                      </p>
+                    )}
+                    <div className="text-[11px] text-slate-500 space-y-0.5">
+                      {bConf.sessionTimeout && <div>• Limit Ceiling: <strong className="text-slate-800">{bConf.sessionTimeout}</strong></div>}
+                      {bConf.mfaRule && <div>• Verification: <strong className="text-slate-800">{bConf.mfaRule}</strong></div>}
+                      {bConf.lastModifiedBy && <div className="text-[10.5px] text-slate-400 pt-1">Audited by {bConf.lastModifiedBy}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Dependent Gateways & Integrations */}
+          {selectedStandard.dependencies && (
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                <Layers className="w-3.5 h-3.5 text-slate-600" />
+                <span>Connected API Infrastructure & Gateway Dependencies</span>
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {selectedStandard.dependencies.map((dep, dIdx) => (
+                  <span
+                    key={dIdx}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs font-medium text-slate-700"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                    <span>{dep.name}</span>
+                    <span className="text-[10px] text-slate-400 font-mono">({dep.status})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Bottom Back Button */}
+          <div className="pt-4 border-t border-slate-200 flex justify-end">
+            <button
+              onClick={() => setSelectedStandard(null)}
+              className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer shadow-xs active:scale-95"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Master Standards List</span>
+            </button>
+          </div>
+        </div>
+      ) : activeTab === 'POLICIES' ? (
         <div className="bg-white border border-slate-200 rounded-2xl shadow-xs p-6 space-y-5">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-4">
             <div>
               <h3 className="text-sm font-bold text-slate-900">
                 Master Banking Regulatory Standards ({filteredPolicies.length} of {policyList.length})
               </h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Click or touch any standard in the list to open its full specification, statutory clauses, telemetry, and bank addenda.
+              </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
               <div className="relative w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <Search className="w-3.5 h-3.5 text-[#0057B8] absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
                   type="text"
                   value={policySearch}
                   onChange={(e) => setPolicySearch(e.target.value)}
                   placeholder="Filter standards by name or code..."
-                  className="w-full bg-slate-50 border border-slate-300 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 outline-none"
+                  className="w-full bg-white border-2 border-[#0057B8]/40 hover:border-[#0057B8] focus:border-[#0057B8] focus:ring-2 focus:ring-[#0057B8]/20 rounded-xl pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 outline-none transition shadow-2xs font-medium"
                 />
               </div>
 
               <select
                 value={selectedDomainFilter}
                 onChange={(e) => setSelectedDomainFilter(e.target.value)}
-                className="bg-slate-50 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium text-slate-800 outline-none cursor-pointer"
+                className="bg-white border-2 border-[#0057B8]/30 hover:border-[#0057B8] focus:border-[#0057B8] rounded-xl px-2.5 py-1.5 text-xs font-semibold text-[#0057B8] outline-none cursor-pointer transition shadow-2xs"
               >
                 <option value="ALL">All Domains</option>
                 <option value="Prudential">APRA Prudential</option>
@@ -493,108 +692,57 @@ export default function AdminDashboard({
             </div>
           </div>
 
-          {/* Grid of all policies */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Clean List View of Master Standards */}
+          <div className="divide-y divide-slate-100 bg-white rounded-xl border border-slate-200 overflow-hidden shadow-2xs">
             {filteredPolicies.map((pol) => (
               <div
                 key={pol.id}
-                className="border border-slate-200 rounded-xl p-4 bg-slate-50/60 space-y-3 hover:border-slate-300 transition shadow-2xs flex flex-col justify-between"
+                onClick={() => setSelectedStandard(pol)}
+                className="p-4 sm:p-4.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-[#0057B8]/5 hover:border-[#0057B8]/20 transition cursor-pointer group active:scale-[0.995]"
               >
-                <div className="space-y-2.5">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <span className="text-[10.5px] font-semibold text-slate-500 block truncate">{pol.breadcrumb}</span>
-                      <h4 className="text-xs font-extrabold text-slate-900 mt-0.5">{pol.title}</h4>
-                    </div>
-                    <span className="text-xs font-mono font-bold bg-blue-50 text-blue-800 px-2 py-0.5 rounded border border-blue-200 flex-shrink-0">
-                      {pol.latestVersion}
-                    </span>
+                <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#0057B8]/10 border border-[#0057B8]/20 flex items-center justify-center text-[#0057B8] flex-shrink-0 group-hover:bg-[#0057B8] group-hover:text-white transition shadow-2xs">
+                    <FileText className="w-4 h-4" />
                   </div>
-
-                  <p className="text-[11.5px] text-slate-700 italic bg-white p-2.5 rounded-lg border border-slate-200 leading-relaxed">
-                    "{pol.visionStatement}"
-                  </p>
-
-                  {/* Statutory Clauses */}
-                  <div className="space-y-1 text-xs">
-                    <div className="font-bold text-slate-800 flex items-center gap-1.5 text-[11px]">
-                      <Lock className="w-3 h-3 text-emerald-700" />
-                      <span>Statutory Master Clauses ({pol.coreFrameworkClauses?.length || 0}):</span>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-[#0057B8] transition">
+                        {pol.title}
+                      </h4>
+                      <span className="text-[11px] font-mono font-bold bg-[#0057B8]/10 text-[#0057B8] px-2 py-0.5 rounded border border-[#0057B8]/20">
+                        {pol.latestVersion}
+                      </span>
                     </div>
-                    {pol.coreFrameworkClauses?.slice(0, 2).map((c, idx) => (
-                      <div key={idx} className="text-[11px] text-slate-600 pl-3 border-l-2 border-slate-200">
-                        <strong className="text-slate-800">{c.clauseId}:</strong> {c.title}
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-1 flex-wrap">
+                      <span className="font-medium text-slate-600 truncate">{pol.breadcrumb.split('•')[0].trim()}</span>
+                      <span>•</span>
+                      <span className="text-slate-500 font-mono">{pol.coreFrameworkClauses?.length || 0} Clauses</span>
+                      <span>•</span>
+                      <span className="text-emerald-700 font-semibold">{pol.complianceLevel.split('/')[0].trim()}</span>
+                    </div>
                   </div>
-
-                  {/* Metrics Table Summary */}
-                  {pol.metricsTable && (
-                    <div className="bg-white rounded-lg border border-slate-200 p-2 text-[11px] space-y-1">
-                      <div className="font-bold text-slate-700 text-[10.5px] uppercase flex items-center gap-1">
-                        <TrendingUp className="w-3 h-3 text-slate-500" />
-                        <span>Monitored Telemetry Baseline</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-2 text-[10.5px]">
-                        {pol.metricsTable.slice(0, 3).map((m, mIdx) => (
-                          <div key={mIdx} className="truncate">
-                            <span className="text-slate-500 block truncate">{m.metric}</span>
-                            <span className="font-mono font-bold text-slate-900">{m.actual}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-xs">
-                  <span className="text-emerald-700 font-bold text-[11px]">{pol.complianceLevel}</span>
-                  <span className="text-[10.5px] text-slate-400 font-mono">Enforced across 4 Tier-1 Banks</span>
+                <div className="flex items-center gap-2.5 sm:self-center flex-shrink-0">
+                  <span className="hidden md:inline-flex text-[11px] font-medium text-slate-500 bg-slate-50 px-2.5 py-1 rounded-full border border-slate-200">
+                    Enforced across 4 Banks
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedStandard(pol);
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-[#0057B8] bg-[#0057B8]/10 group-hover:bg-[#0057B8] group-hover:text-white px-3 py-1.5 rounded-lg border border-[#0057B8]/20 group-hover:border-[#0057B8] transition cursor-pointer shadow-2xs"
+                  >
+                    <span>View Details</span>
+                    <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition" />
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         </div>
-      )}
-
-      {/* TAB 3: Audit Trail */}
-      {activeTab === 'AUDIT' && (
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-xs p-6 space-y-4">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900">
-              Regulatory Audit History & Addenda Modifications
-            </h3>
-          </div>
-
-          <div className="space-y-3">
-            {auditHistoryLogs.map((log) => (
-              <div
-                key={log.id}
-                className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 text-xs"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center font-bold text-blue-600 shadow-2xs">
-                    <History className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{log.action}</span>
-                      <span className="text-[11px] font-mono text-slate-500">on {log.target}</span>
-                    </div>
-                    <div className="text-[11px] text-slate-500">
-                      By <strong className="text-slate-700">{log.actor}</strong> • {log.timestamp}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="text-xs text-slate-600 font-medium">
-                  {log.detail}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {/* ------------------- BANK INSPECTION MODAL / DRAWER ------------------- */}
       {inspectedBank && currentBankData && (

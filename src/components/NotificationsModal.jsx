@@ -128,13 +128,13 @@ export default function NotificationsModal({ isOpen, onClose, onOpenPolicy }) {
         {/* Filter & Search Bar */}
         <div className="p-3 border-b border-slate-200 bg-white flex flex-col sm:flex-row gap-2 items-center justify-between">
           <div className="relative w-full sm:w-72">
-            <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-3.5 h-3.5 text-[#0057B8] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={searchCode}
               onChange={(e) => setSearchCode(e.target.value)}
               placeholder="Search by code (e.g. APRA-CPS234)..."
-              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:border-slate-400"
+              className="w-full text-xs pl-8 pr-3 py-1.5 rounded-xl border-2 border-[#0057B8]/40 hover:border-[#0057B8] bg-white focus:outline-none focus:border-[#0057B8] focus:ring-2 focus:ring-[#0057B8]/20 transition shadow-2xs font-medium"
             />
           </div>
 
@@ -143,7 +143,7 @@ export default function NotificationsModal({ isOpen, onClose, onOpenPolicy }) {
               onClick={() => setFilterType('all')}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium transition cursor-pointer ${
                 filterType === 'all'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-2xs font-semibold'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -153,7 +153,7 @@ export default function NotificationsModal({ isOpen, onClose, onOpenPolicy }) {
               onClick={() => setFilterType('regulatory')}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium transition cursor-pointer ${
                 filterType === 'regulatory'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-2xs font-semibold'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -163,7 +163,7 @@ export default function NotificationsModal({ isOpen, onClose, onOpenPolicy }) {
               onClick={() => setFilterType('maker_checker')}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium transition cursor-pointer ${
                 filterType === 'maker_checker'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-2xs font-semibold'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -173,7 +173,7 @@ export default function NotificationsModal({ isOpen, onClose, onOpenPolicy }) {
               onClick={() => setFilterType('security')}
               className={`px-2.5 py-1 rounded-md text-[11.5px] font-medium transition cursor-pointer ${
                 filterType === 'security'
-                  ? 'bg-slate-900 text-white shadow-2xs'
+                  ? 'bg-[#0057B8] text-white shadow-2xs font-semibold'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
@@ -261,7 +261,7 @@ export default function NotificationsModal({ isOpen, onClose, onOpenPolicy }) {
           <span>All regulatory compliance events cryptographically logged in banking repository.</span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-white transition cursor-pointer"
+            className="px-4 py-1.5 rounded-lg text-xs font-semibold bg-[#0057B8] hover:bg-[#004EA6] text-white transition cursor-pointer shadow-xs"
           >
             Close
           </button>

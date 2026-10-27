@@ -479,7 +479,7 @@ export default function ShidneyAIChat({
           <button
             type="submit"
             disabled={!inputPrompt.trim() || isLoading}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white p-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center flex-shrink-0 shadow-2xs"
+            className="bg-[#0057B8] hover:bg-[#004EA6] disabled:opacity-40 text-white p-2 rounded-xl text-xs font-bold transition cursor-pointer flex items-center justify-center flex-shrink-0 shadow-primary-sm"
             title="Send message"
           >
             <Send className="w-3.5 h-3.5" />

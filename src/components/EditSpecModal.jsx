@@ -396,7 +396,7 @@ export default function EditSpecModal({
                 className={`flex items-center gap-2 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer ${
                   isManager 
                     ? 'bg-emerald-700 hover:bg-emerald-800' 
-                    : 'bg-blue-600 hover:bg-blue-700'
+                    : 'bg-[#0057B8] hover:bg-[#004EA6]'
                 }`}
               >
                 {isManager ? (

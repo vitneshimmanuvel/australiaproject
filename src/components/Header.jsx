@@ -109,35 +109,40 @@ export default function Header({
         )}
 
         {/* Workspace Brand / Bank Context Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
-          <Building2 className="w-4 h-4 text-slate-700" />
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-50/80 border border-slate-200/90 shadow-2xs">
+          <Building2 className="w-4 h-4 text-[#0057B8]" />
           <span className="font-semibold text-slate-800 text-[13px] tracking-tight">
             {currentView === 'SUPER_ADMIN' ? 'Platform Central Administration' : selectedBank.name}
           </span>
-          <span className="text-[11px] font-mono text-slate-500 bg-white border border-slate-200 px-1.5 py-0.2 rounded">
+          <span className="text-[11px] font-mono text-[#0057B8] font-semibold bg-white border border-[#0057B8]/30 px-1.5 py-0.2 rounded shadow-2xs">
             {currentView === 'SUPER_ADMIN' ? 'Platform Owner' : 'CBA'}
           </span>
         </div>
       </div>
 
-      {/* Center: Search Bar */}
+      {/* Center: Search Bar with High-Contrast Banking Blue Border */}
       <div className="flex-1 max-w-xs sm:max-w-md mx-3 sm:mx-6 relative">
-        <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div className="relative group/search">
+          <Search className="w-4 h-4 text-[#0057B8] absolute left-3 top-1/2 -translate-y-1/2 transition-colors" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search policies, operational clauses, SLAs..."
-            className="w-full bg-[#f8fafc] border border-slate-200 focus:bg-white focus:border-slate-400 rounded-lg pl-9 pr-8 py-1.5 text-[13px] text-slate-800 placeholder-slate-400 outline-none transition"
+            className="w-full bg-white border-2 border-[#0057B8]/40 hover:border-[#0057B8] focus:border-[#0057B8] focus:ring-3 focus:ring-[#0057B8]/20 rounded-xl pl-9 pr-9 py-1.5 text-[13px] text-slate-800 placeholder-slate-400 outline-none transition shadow-2xs font-medium"
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-0.5 rounded-full text-slate-400 hover:text-white hover:bg-[#0057B8] transition cursor-pointer"
+              title="Clear search"
             >
               <X className="w-3.5 h-3.5" />
             </button>
+          ) : (
+            <span className="hidden sm:inline-block absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-mono text-[#0057B8] bg-blue-50 border border-[#0057B8]/30 px-1.5 py-0.5 rounded font-semibold pointer-events-none">
+              Ctrl+K
+            </span>
           )}
         </div>
       </div>
@@ -150,9 +155,9 @@ export default function Header({
           <button
             onClick={onOpenBankUserManagerModal}
             title="Manage Bank Users, Clearances & Policy Authoring Permissions"
-            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 shadow-2xs transition cursor-pointer"
+            className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold bg-blue-50/70 hover:bg-[#0057B8] text-[#0057B8] hover:text-white border-2 border-[#0057B8]/30 hover:border-[#0057B8] shadow-2xs transition-all cursor-pointer active:scale-95"
           >
-            <Users className="w-3.5 h-3.5 text-slate-600" />
+            <Users className="w-3.5 h-3.5" />
             <span>Bank Users & Access</span>
           </button>
         )}
@@ -184,9 +189,9 @@ export default function Header({
         <div ref={roleDropdownRef} className="relative">
           <button
             onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-            className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-left transition cursor-pointer shadow-2xs"
+            className="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 hover:border-[#0057B8]/40 rounded-lg px-2.5 py-1.5 text-left transition cursor-pointer shadow-2xs"
           >
-            <div className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] text-white bg-[#1e293b]">
+            <div className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-[11px] text-white bg-[#0057B8] shadow-2xs">
               {currentUser?.avatar || (currentUser?.roleType === 'admin' ? 'R' : currentUser?.roleType === 'manager' ? 'MV' : 'SJ')}
             </div>
             <div className="hidden sm:block">
@@ -218,16 +223,18 @@ export default function Header({
                         setIsRoleDropdownOpen(false);
                       }}
                       className={`w-full p-2.5 text-left flex items-start gap-2.5 hover:bg-slate-50 transition cursor-pointer ${
-                        isActive ? 'bg-slate-100/70' : ''
+                        isActive ? 'bg-[#0057B8]/10' : ''
                       }`}
                     >
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-white bg-[#1e293b] flex-shrink-0">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs text-white flex-shrink-0 ${
+                        isActive ? 'bg-[#0057B8]' : 'bg-slate-600'
+                      }`}>
                         {r.avatar}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-[12.5px] font-bold text-slate-800 flex items-center justify-between">
+                        <div className={`text-[12.5px] font-bold flex items-center justify-between ${isActive ? 'text-[#0057B8]' : 'text-slate-800'}`}>
                           <span>{r.name}</span>
-                          {isActive && <CheckCircle className="w-3.5 h-3.5 text-slate-800" />}
+                          {isActive && <CheckCircle className="w-3.5 h-3.5 text-[#0057B8]" />}
                         </div>
                         <div className="text-[11.5px] text-slate-600 font-medium">{r.role}</div>
                         <div className="text-[10.5px] text-slate-400">{r.bankName}</div>

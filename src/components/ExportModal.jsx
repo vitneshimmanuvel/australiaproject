@@ -55,7 +55,7 @@ export default function ExportModal({
           <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <span className="font-bold text-slate-900 text-xs">LibTrak Verified Specification</span>
-              <span className="font-mono font-bold text-blue-700 text-xs bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+              <span className="font-mono font-bold text-[#0057B8] text-xs bg-[#0057B8]/10 px-2 py-0.5 rounded border border-[#0057B8]/30">
                 {policy.latestVersion || 'v3.1.2'}
               </span>
             </div>
@@ -92,11 +92,11 @@ export default function ExportModal({
               </div>
             </div>
 
-            <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 flex items-start gap-2.5">
-              <Unlock className="w-4 h-4 text-blue-700 flex-shrink-0 mt-0.5" />
+            <div className="p-3 bg-[#0057B8]/5 rounded-xl border border-[#0057B8]/20 flex items-start gap-2.5">
+              <Unlock className="w-4 h-4 text-[#0057B8] flex-shrink-0 mt-0.5" />
               <div>
-                <span className="font-bold text-blue-950 text-xs">Institution Policy Rules ({selectedBank.name})</span>
-                <p className="text-xs text-blue-900 mt-0.5">
+                <span className="font-bold text-slate-950 text-xs">Institution Policy Rules ({selectedBank.name})</span>
+                <p className="text-xs text-slate-700 mt-0.5">
                   Customized institutional parameters and risk verification triggers verified against statutory frameworks.
                 </p>
               </div>
@@ -117,7 +117,7 @@ export default function ExportModal({
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer"
+            className="flex items-center gap-2 bg-[#0057B8] hover:bg-[#004EA6] text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer"
           >
             <Download className="w-4 h-4" />
             <span>{downloading ? 'Exporting...' : 'Download Specification Bundle'}</span>

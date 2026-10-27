@@ -40,7 +40,7 @@ export default function BankProfileModal({
         {/* Header */}
         <div className="px-5 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-700 shadow-2xs">
+            <div className="w-8 h-8 rounded-lg bg-[#0057B8]/10 border border-[#0057B8]/30 flex items-center justify-center text-[#0057B8] shadow-2xs">
               <Building2 className="w-4 h-4" />
             </div>
             <div>
@@ -75,7 +75,7 @@ export default function BankProfileModal({
                   }}
                   className={`p-2.5 rounded-lg border text-left transition cursor-pointer flex items-center gap-2.5 ${
                     currentProfile.id === p.id
-                      ? 'bg-blue-50 border-blue-400 text-blue-950 font-bold shadow-2xs'
+                      ? 'bg-[#0057B8]/10 border-[#0057B8] text-[#0057B8] font-bold shadow-2xs'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
@@ -95,7 +95,7 @@ export default function BankProfileModal({
           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3.5 space-y-2 shadow-2xs">
             <div className="flex justify-between items-center border-b border-slate-200 pb-1.5">
               <span className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
-                <Key className="w-3.5 h-3.5 text-blue-600" />
+                <Key className="w-3.5 h-3.5 text-[#0057B8]" />
                 API Credentials & Access Key
               </span>
               <span className="text-[10px] font-bold bg-emerald-50 text-emerald-800 px-1.5 py-0.2 rounded border border-emerald-200">
@@ -186,7 +186,7 @@ export default function BankProfileModal({
 
               <button
                 type="submit"
-                className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer"
+                className="flex items-center gap-1.5 bg-[#0057B8] hover:bg-[#004EA6] text-white font-bold px-4 py-2 rounded-lg text-xs shadow-xs transition cursor-pointer"
               >
                 <Save className="w-3.5 h-3.5" />
                 <span>Save Policy Preferences</span>

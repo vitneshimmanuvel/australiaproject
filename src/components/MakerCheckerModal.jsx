@@ -54,9 +54,9 @@ export default function MakerCheckerModal({
         <div className="px-6 pt-3 flex gap-4 border-b border-[#e5e7eb] bg-slate-50/60">
           <button
             onClick={() => setActiveTab('pending')}
-            className={`pb-2.5 px-2 text-[13px] font-semibold border-b-2 flex items-center gap-2 transition-all ${
+            className={`pb-2.5 px-2 text-[13px] font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'pending'
-                ? 'border-slate-900 text-slate-900'
+                ? 'border-[#0057B8] text-[#0057B8]'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -67,9 +67,9 @@ export default function MakerCheckerModal({
           </button>
           <button
             onClick={() => setActiveTab('history')}
-            className={`pb-2.5 px-2 text-[13px] font-semibold border-b-2 flex items-center gap-2 transition-all ${
+            className={`pb-2.5 px-2 text-[13px] font-semibold border-b-2 flex items-center gap-2 transition-all cursor-pointer ${
               activeTab === 'history'
-                ? 'border-slate-900 text-slate-900'
+                ? 'border-[#0057B8] text-[#0057B8]'
                 : 'border-transparent text-slate-500 hover:text-slate-700'
             }`}
           >
@@ -101,7 +101,7 @@ export default function MakerCheckerModal({
                       onClick={() => setSelectedItem(item)}
                       className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
                         currentItem?.id === item.id
-                          ? 'border-slate-800 bg-slate-50 shadow-xs'
+                          ? 'border-[#0057B8] bg-[#0057B8]/5 shadow-xs'
                           : 'border-slate-200 hover:border-slate-300 bg-white'
                       }`}
                     >
@@ -192,7 +192,7 @@ export default function MakerCheckerModal({
                           value={comments}
                           onChange={(e) => setComments(e.target.value)}
                           placeholder="e.g. Approved operational thresholds as reviewed with Credit Operations Squad."
-                          className="w-full p-2.5 border border-slate-300 rounded-lg text-[13px] focus:outline-none focus:border-slate-500"
+                          className="w-full p-2.5 border border-slate-300 rounded-lg text-[13px] focus:outline-none focus:border-[#0057B8] focus:ring-2 focus:ring-[#0057B8]/15"
                         />
 
                         <div className="flex items-center justify-end gap-2.5 pt-1">
@@ -206,7 +206,7 @@ export default function MakerCheckerModal({
                           <button
                             onClick={() => handleAction('approve')}
                             disabled={isSubmitting}
-                            className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[13px] font-semibold shadow-xs transition cursor-pointer"
+                            className="px-5 py-2 bg-[#0057B8] hover:bg-[#004EA6] text-white rounded-lg text-[13px] font-semibold shadow-xs transition cursor-pointer"
                           >
                             {isSubmitting ? 'Approving...' : 'Approve & Increment to v1.1'}
                           </button>

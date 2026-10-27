@@ -138,5 +138,42 @@ export const apiService = {
       console.warn('API error for metrics:', e);
       return [];
     }
+  },
+
+  // 6. AI Document Ingestion (Groq) & RAG (Neon pgvector)
+  async ingestDocuments(payload) {
+    let headers = {};
+    let body = payload;
+
+    if (!(payload instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(payload);
+    }
+
+    const res = await fetch(`${API_BASE}/ai/ingest-documents`, {
+      method: 'POST',
+      headers,
+      body
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: 'Upload failed' }));
+      throw new Error(err.error || 'Failed to ingest documents');
+    }
+    return await res.json();
+  },
+
+  async queryRag(question, departmentId = 'all') {
+    try {
+      const res = await fetch(`${API_BASE}/ai/rag-query`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ question, department_id: departmentId })
+      });
+      if (!res.ok) throw new Error('RAG query error');
+      return await res.json();
+    } catch (e) {
+      console.warn('RAG query error:', e);
+      return null;
+    }
   }
 };
